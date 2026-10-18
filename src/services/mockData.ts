@@ -1,66 +1,109 @@
-import { Station, ProductItem } from '../types';
+import { Station, TrainRoute, ProductItem } from '../types';
+
+export const INITIAL_TRAINS: TrainRoute[] = [
+  {
+    id: 'train-12952',
+    trainNumber: '12952',
+    trainName: 'Mumbai Rajdhani Express',
+    route: 'New Delhi (NDLS) → Mumbai Central (MMCT)',
+    origin: 'NDLS',
+    destination: 'MMCT',
+    isServiceable: false,
+    statusBadge: 'Coming Soon to this Train',
+    coach: 'B3',
+    berth: '24',
+    expectedLaunchDate: 'Launching in 2 weeks',
+  },
+  {
+    id: 'train-22436',
+    trainNumber: '22436',
+    trainName: 'Vande Bharat Express',
+    route: 'New Delhi (NDLS) → Varanasi (BSB)',
+    origin: 'NDLS',
+    destination: 'BSB',
+    isServiceable: true,
+    statusBadge: '10-Min Delivery Active ⚡',
+    coach: 'C4',
+    berth: '42',
+  },
+  {
+    id: 'train-12004',
+    trainNumber: '12004',
+    trainName: 'Lucknow Shatabdi Express',
+    route: 'New Delhi (NDLS) → Lucknow Jn (LJN)',
+    origin: 'NDLS',
+    destination: 'LJN',
+    isServiceable: false,
+    statusBadge: 'Coming Soon to this Train',
+    coach: 'E1',
+    berth: '18',
+    expectedLaunchDate: 'Coming Soon',
+  },
+  {
+    id: 'train-12301',
+    trainNumber: '12301',
+    trainName: 'Howrah Rajdhani Express',
+    route: 'Howrah (HWH) → New Delhi (NDLS)',
+    origin: 'HWH',
+    destination: 'NDLS',
+    isServiceable: false,
+    statusBadge: 'Coming Soon to this Train',
+    coach: 'B2',
+    berth: '12',
+    expectedLaunchDate: 'Coming Soon',
+  },
+  {
+    id: 'train-12259',
+    trainNumber: '12259',
+    trainName: 'Sealdah Duronto Express',
+    route: 'Sealdah (SDAH) → Bikaner (BKN)',
+    origin: 'SDAH',
+    destination: 'BKN',
+    isServiceable: false,
+    statusBadge: 'Coming Soon to this Train',
+    coach: 'A1',
+    berth: '36',
+    expectedLaunchDate: 'Coming Soon',
+  },
+];
 
 export const INITIAL_STATIONS: Station[] = [
   {
     id: 'unserviceable-pocket-a2',
-    name: 'Pocket A 2',
-    code: 'PKT-A2',
-    city: 'New Delhi',
+    name: '12952 Rajdhani Express',
+    code: '12952',
+    city: 'NDLS → MMCT',
     isServiceable: false,
-    pocketName: 'Pocket A 2',
-    addressSnippet: 'A2/20, Po...',
-    expectedLaunchDate: 'Launching Next Month'
+    pocketName: '12952 Mumbai Rajdhani',
+    trainName: '12952 Rajdhani Express',
+    trainNumber: '12952',
+    addressSnippet: 'Coach B3, Berth 24...',
+    expectedLaunchDate: 'Coming Soon',
   },
   {
-    id: 'ndls-live',
-    name: 'New Delhi Railway Station',
-    code: 'NDLS',
-    city: 'New Delhi',
+    id: 'vande-bharat-live',
+    name: '22436 Vande Bharat Express',
+    code: '22436',
+    city: 'NDLS → BSB',
     isServiceable: true,
-    pocketName: 'Platform 1 - Paharganj Side',
-    addressSnippet: 'Paharganj / Ajmeri Gate Side',
-    platformCount: 16
+    pocketName: '22436 Vande Bharat',
+    trainName: '22436 Vande Bharat Express',
+    trainNumber: '22436',
+    addressSnippet: 'Coach C4, Berth 42 (Delivering)',
+    platformCount: 16,
   },
   {
-    id: 'nzm-live',
-    name: 'Hazrat Nizamuddin',
-    code: 'NZM',
-    city: 'New Delhi',
-    isServiceable: true,
-    pocketName: 'Platform 3 - Sarai Kale Khan',
-    addressSnippet: 'Sarai Kale Khan Gate 2',
-    platformCount: 8
-  },
-  {
-    id: 'csmt-soon',
-    name: 'Chhatrapati Shivaji Maharaj Terminus',
-    code: 'CSMT',
-    city: 'Mumbai',
+    id: 'shatabdi-soon',
+    name: '12004 Lucknow Shatabdi',
+    code: '12004',
+    city: 'NDLS → LJN',
     isServiceable: false,
-    pocketName: 'Platform 8',
-    addressSnippet: 'Fort, Mumbai',
-    expectedLaunchDate: 'Coming in 2 weeks'
+    pocketName: '12004 Shatabdi Express',
+    trainName: '12004 Lucknow Shatabdi',
+    trainNumber: '12004',
+    addressSnippet: 'Coach E1, Berth 18...',
+    expectedLaunchDate: 'Coming Soon',
   },
-  {
-    id: 'hwh-soon',
-    name: 'Howrah Junction',
-    code: 'HWH',
-    city: 'Kolkata',
-    isServiceable: false,
-    pocketName: 'Old Complex',
-    addressSnippet: 'Station Rd, Howrah',
-    expectedLaunchDate: 'Coming Soon'
-  },
-  {
-    id: 'pnbe-soon',
-    name: 'Patna Junction',
-    code: 'PNBE',
-    city: 'Patna',
-    isServiceable: false,
-    pocketName: 'Platform 1',
-    addressSnippet: 'Station Roundabout, Patna',
-    expectedLaunchDate: 'Coming Soon'
-  }
 ];
 
 export const MOCK_PRODUCTS: ProductItem[] = [
@@ -74,7 +117,7 @@ export const MOCK_PRODUCTS: ProductItem[] = [
     deliveryTimeMins: 8,
     imageUrl: '☕',
     tag: 'Bestseller',
-    inStock: true
+    inStock: true,
   },
   {
     id: 'p2',
@@ -86,7 +129,7 @@ export const MOCK_PRODUCTS: ProductItem[] = [
     deliveryTimeMins: 12,
     imageUrl: '🍛',
     tag: 'Fresh & Hygienic',
-    inStock: true
+    inStock: true,
   },
   {
     id: 'p3',
@@ -96,7 +139,7 @@ export const MOCK_PRODUCTS: ProductItem[] = [
     weightOrVolume: '1 L',
     deliveryTimeMins: 5,
     imageUrl: '💧',
-    inStock: true
+    inStock: true,
   },
   {
     id: 'p4',
@@ -106,7 +149,7 @@ export const MOCK_PRODUCTS: ProductItem[] = [
     weightOrVolume: '200 g',
     deliveryTimeMins: 8,
     imageUrl: '🥨',
-    inStock: true
+    inStock: true,
   },
   {
     id: 'p5',
@@ -116,7 +159,7 @@ export const MOCK_PRODUCTS: ProductItem[] = [
     weightOrVolume: '50 g',
     deliveryTimeMins: 8,
     imageUrl: '🥔',
-    inStock: true
+    inStock: true,
   },
   {
     id: 'p6',
@@ -126,26 +169,6 @@ export const MOCK_PRODUCTS: ProductItem[] = [
     weightOrVolume: '300 ml',
     deliveryTimeMins: 8,
     imageUrl: '🥤',
-    inStock: true
+    inStock: true,
   },
-  {
-    id: 'p7',
-    name: 'Dettol Disinfectant Wet Wipes',
-    category: 'Travel Essentials',
-    price: 75,
-    weightOrVolume: '25 wipes',
-    deliveryTimeMins: 10,
-    imageUrl: '🧼',
-    inStock: true
-  },
-  {
-    id: 'p8',
-    name: 'Pampers Baby Dry Pants (M)',
-    category: 'Baby Care',
-    price: 180,
-    weightOrVolume: 'Pack of 10',
-    deliveryTimeMins: 10,
-    imageUrl: '👶',
-    inStock: true
-  }
 ];

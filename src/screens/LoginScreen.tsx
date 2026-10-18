@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import { ChevronDown, ArrowRight } from 'lucide-react';
-import { OtpModal } from '../components/OtpModal';
+import { GoogleAuthModal } from '../components/GoogleAuthModal';
 import { sounds } from '../services/soundEffects';
+import { UserProfile } from '../types';
 
 interface LoginScreenProps {
-  onLoginSuccess: (phoneNumber: string) => void;
+  onLoginSuccess: (userOrPhone: string | UserProfile) => void;
   onSkip?: () => void;
 }
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onSkip }) => {
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [showGoogleModal, setShowGoogleModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [activeModalTitle, setActiveModalTitle] = useState('');
 
@@ -21,20 +22,17 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onSkip
     setPhoneNumber(raw);
   };
 
+  // Direct login without OTP (as requested)
   const handleProceed = () => {
-    if (!phoneNumber) {
-      setPhoneNumber('9876543210');
-      sounds.tap();
-      setShowOtpModal(true);
-      return;
-    }
-    sounds.tap();
-    setShowOtpModal(true);
+    sounds.success();
+    const phone = phoneNumber || '9876543210';
+    onLoginSuccess(phone);
   };
 
-  const handleGoogleLogin = () => {
-    sounds.tap();
-    onLoginSuccess('9876543210');
+  // Google Sign-In
+  const handleGoogleSuccess = (user: UserProfile) => {
+    setShowGoogleModal(false);
+    onLoginSuccess(user);
   };
 
   const handleOpenLegal = (title: string) => {
@@ -119,7 +117,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onSkip
           </div>
         </div>
 
-        {/* Primary Coral Red Button matching Mockup 2 */}
+        {/* Primary Coral Red Button: Direct Login (No OTP) */}
         <button
           onClick={handleProceed}
           className={`w-full py-3 px-4 rounded-2xl font-bold text-sm tracking-wide text-white transition-all shadow-sm flex items-center justify-center gap-2 active:scale-98 ${
@@ -137,10 +135,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onSkip
 
         {/* Social Auth Circles */}
         <div className="flex items-center justify-center gap-3.5 mb-3">
-          {/* Google Button */}
+          {/* Google Sign-in Button */}
           <button
-            onClick={handleGoogleLogin}
-            title="Continue with Google"
+            onClick={() => {
+              sounds.tap();
+              setShowGoogleModal(true);
+            }}
+            title="Sign in with Google"
             className="w-10 h-10 rounded-full border border-slate-200 bg-white shadow-2xs hover:border-slate-300 hover:shadow-xs active:scale-95 transition-all flex items-center justify-center"
           >
             {/* Google 'G' Multi-color SVG */}
@@ -168,9 +169,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onSkip
           <button
             onClick={() => {
               sounds.tap();
-              alert('More login options (Truecaller, Apple ID, SMS) will connect when you plug your backend!');
+              handleProceed();
             }}
-            title="More Options"
+            title="Quick Login"
             className="w-10 h-10 rounded-full border border-slate-200 bg-white shadow-2xs hover:border-slate-300 hover:shadow-xs active:scale-95 transition-all flex items-center justify-center text-slate-700 font-black tracking-widest text-sm"
           >
             •••
@@ -203,15 +204,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onSkip
         </div>
       </div>
 
-      {/* OTP Verification Bottom Sheet */}
-      <OtpModal
-        isOpen={showOtpModal}
-        phoneNumber={phoneNumber}
-        onClose={() => setShowOtpModal(false)}
-        onSuccess={() => {
-          setShowOtpModal(false);
-          onLoginSuccess(phoneNumber || '9876543210');
-        }}
+      {/* Google Sign-in Modal */}
+      <GoogleAuthModal
+        isOpen={showGoogleModal}
+        onClose={() => setShowGoogleModal(false)}
+        onSuccess={handleGoogleSuccess}
       />
 
       {/* Legal Info Simple Modal */}
@@ -226,7 +223,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onSkip
           >
             <h3 className="text-base font-bold text-slate-900 mb-2">{activeModalTitle}</h3>
             <p className="text-xs text-slate-600 leading-relaxed">
-              RailQuick ensures passenger safety and hygiene for deliveries straight to your train coach or platform seat across Indian Railway junctions.
+              RailQuick delivers fresh meals and travel essentials straight to your train berth across Indian Railway junctions.
             </p>
             <button
               onClick={() => setShowTermsModal(false)}

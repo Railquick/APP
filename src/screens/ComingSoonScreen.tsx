@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { ChevronDown, MapPin, Train } from 'lucide-react';
 import { RequestAreaModal } from '../components/RequestAreaModal';
 import { StationPickerModal } from '../components/StationPickerModal';
 import { ProfileDrawer } from '../components/ProfileDrawer';
@@ -23,6 +24,8 @@ export const ComingSoonScreen: React.FC<ComingSoonScreenProps> = ({
   const [showProfileDrawer, setShowProfileDrawer] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
 
+  const trainLabel = currentStation.trainName || currentStation.name || '12952 Rajdhani Express';
+
   return (
     <div className="w-full h-full bg-gradient-to-b from-[#A5B9D2] via-[#BACBDD] to-white flex items-center justify-center overflow-hidden select-none relative">
       {/* 100% Fit for Mobile Phone Screen */}
@@ -34,20 +37,31 @@ export const ComingSoonScreen: React.FC<ComingSoonScreenProps> = ({
           className="w-full h-full object-contain select-none pointer-events-none"
         />
 
-        {/* --- Interactive Hotspots --- */}
-
-        {/* 1. Header: Location & Unserviceable Area (Tap to switch station / test live store) */}
-        <button
-          type="button"
+        {/* --- Dynamic Train Header Overlay (Showing Train Name as requested) --- */}
+        <div
           onClick={() => {
             sounds.tap();
             setShowPickerModal(true);
           }}
-          className="absolute top-[2.2%] left-[4%] w-[70%] h-[7%] rounded-2xl active:bg-black/10 transition-colors cursor-pointer focus:outline-none"
-          title="Change Station"
+          className="absolute top-[2.4%] left-[4.2%] w-[72%] h-[7%] flex flex-col justify-center px-2 rounded-2xl bg-[#A5B9D2]/95 backdrop-blur-xs cursor-pointer active:opacity-85 transition-opacity"
+          title="Click to change Train / Station"
         >
-          <span className="sr-only">Change Station</span>
-        </button>
+          <span className="text-[13px] sm:text-[14px] font-black text-slate-900 tracking-tight leading-tight">
+            {currentStation.isServiceable ? 'Serviceable Train ⚡' : 'Unserviceable train'}
+          </span>
+          <div className="flex items-center gap-1 mt-0.5 text-slate-700 text-[10px] sm:text-[11px] font-bold">
+            <span className="truncate max-w-[155px] sm:max-w-[180px] text-slate-900">
+              {trainLabel}
+            </span>
+            <span className="text-slate-500">📍</span>
+            <span className="truncate max-w-[65px] text-slate-600 font-normal">
+              {currentStation.addressSnippet || 'Coach B3...'}
+            </span>
+            <ChevronDown className="w-3.5 h-3.5 text-slate-700 shrink-0" />
+          </div>
+        </div>
+
+        {/* --- Interactive Hotspots --- */}
 
         {/* 2. Header: Profile Icon */}
         <button
@@ -70,9 +84,9 @@ export const ComingSoonScreen: React.FC<ComingSoonScreenProps> = ({
             setShowRequestModal(true);
           }}
           className="absolute bottom-[7.8%] left-[5%] w-[90%] h-[7%] rounded-2xl cursor-pointer active:scale-[0.97] active:brightness-95 transition-all focus:outline-none"
-          title="Request RailQuick in your area"
+          title="Request RailQuick for your train"
         >
-          <span className="sr-only">Request RailQuick in your area</span>
+          <span className="sr-only">Request RailQuick for your train</span>
         </button>
 
         {/* 4. Footer: "Need help?" */}
@@ -104,7 +118,7 @@ export const ComingSoonScreen: React.FC<ComingSoonScreenProps> = ({
       {/* Interactive Bottom Sheet Modals */}
       <RequestAreaModal
         isOpen={showRequestModal}
-        stationName={`${currentStation.name} (${currentStation.pocketName || 'Platform A2'})`}
+        stationName={`${trainLabel} (${currentStation.addressSnippet || 'Coach B3'})`}
         onClose={() => setShowRequestModal(false)}
       />
 
