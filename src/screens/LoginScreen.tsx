@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { ChevronDown, ArrowRight } from 'lucide-react';
-import { FloatingProductsGrid } from '../components/FloatingProductsGrid';
 import { OtpModal } from '../components/OtpModal';
 import { sounds } from '../services/soundEffects';
 
@@ -24,7 +23,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onSkip
 
   const handleProceed = () => {
     if (!phoneNumber) {
-      // Auto-fill demo number if empty for friction-free UX
       setPhoneNumber('9876543210');
       sounds.tap();
       setShowOtpModal(true);
@@ -36,7 +34,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onSkip
 
   const handleGoogleLogin = () => {
     sounds.tap();
-    // Simulate instant Google OAuth login
     onLoginSuccess('9876543210');
   };
 
@@ -47,38 +44,40 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onSkip
   };
 
   return (
-    <div className="relative w-full h-full min-h-[680px] bg-white flex flex-col justify-between p-4 sm:p-6 overflow-y-auto">
-      {/* Top Header / Skip */}
-      <div className="w-full flex justify-end">
+    <div className="relative w-full h-full min-h-[720px] bg-white flex flex-col justify-between overflow-y-auto no-scrollbar">
+      {/* 1. Top Products Mosaic (Exact High-Resolution Product Artwork from Design Mockup) */}
+      <div className="w-full relative shrink-0">
+        <img
+          src="/extracted_designs/mockup_products_top.png"
+          alt="RailQuick Fresh Essentials Mosaic"
+          className="w-full h-auto object-contain select-none"
+        />
+
+        {/* Guest Skip Pill */}
         {onSkip && (
           <button
             onClick={() => {
               sounds.tap();
               onSkip();
             }}
-            className="text-xs font-bold text-slate-400 hover:text-slate-700 px-3 py-1 rounded-full hover:bg-slate-50 transition-colors"
+            className="absolute top-3 right-3 text-[11px] font-bold text-slate-500 bg-white/90 backdrop-blur-xs px-2.5 py-1 rounded-full shadow-2xs hover:bg-white active:scale-95 transition-all"
           >
-            Explore as Guest
+            Guest View
           </button>
         )}
       </div>
 
-      {/* 1. Floating Products Showcase (Top Half) */}
-      <div className="w-full flex-1 flex flex-col justify-center items-center py-2">
-        <FloatingProductsGrid />
-      </div>
-
-      {/* 2. Login Form (Bottom Half - Exact Match to Mockup Screen 2) */}
-      <div className="w-full max-w-sm mx-auto flex flex-col items-center">
+      {/* 2. Login Form (Exact Replica of Mockup Screen 2) */}
+      <div className="w-full px-6 pb-6 pt-1 flex flex-col items-center">
         {/* Main Headline */}
-        <h1 className="text-[22px] sm:text-[24px] font-black text-slate-900 text-center tracking-tight mb-4 leading-snug">
+        <h1 className="text-[23px] font-black text-slate-950 text-center tracking-tight mb-3">
           India’s Train delivery app
         </h1>
 
         {/* Divider: "Log in or sign up" */}
-        <div className="w-full flex items-center gap-3 mb-4">
+        <div className="w-full flex items-center gap-3 mb-3.5">
           <div className="flex-1 h-[1px] bg-slate-200"></div>
-          <span className="text-xs font-semibold text-slate-500 whitespace-nowrap">
+          <span className="text-xs font-semibold text-slate-400 whitespace-nowrap">
             Log in or sign up
           </span>
           <div className="flex-1 h-[1px] bg-slate-200"></div>
@@ -86,11 +85,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onSkip
 
         {/* Phone Input Box */}
         <div className="w-full mb-3">
-          <div className="flex items-center w-full px-3.5 py-3 border border-slate-300 rounded-2xl bg-white shadow-xs focus-within:border-slate-800 focus-within:ring-1 focus-within:ring-slate-800 transition-all">
+          <div className="flex items-center w-full px-3.5 py-3 border border-slate-300 rounded-2xl bg-white shadow-2xs focus-within:border-slate-800 transition-all">
             {/* Country Flag + Chevron */}
             <div className="flex items-center gap-1.5 pr-2.5 border-r border-slate-200 shrink-0 cursor-pointer">
               {/* India Flag SVG */}
-              <div className="w-6 h-4.5 rounded-xs overflow-hidden shadow-xs flex flex-col border border-slate-200">
+              <div className="w-6 h-4.5 rounded-xs overflow-hidden shadow-2xs flex flex-col border border-slate-200">
                 <div className="h-1.5 bg-[#FF9933]"></div>
                 <div className="h-1.5 bg-white relative flex items-center justify-center">
                   <div className="w-1.5 h-1.5 rounded-full border border-[#000080] flex items-center justify-center">
@@ -99,7 +98,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onSkip
                 </div>
                 <div className="h-1.5 bg-[#128807]"></div>
               </div>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+              <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
             </div>
 
             {/* Code +91 */}
@@ -120,12 +119,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onSkip
           </div>
         </div>
 
-        {/* Primary CTA Button: Coral Red */}
+        {/* Primary Coral Red Button matching Mockup 2 */}
         <button
           onClick={handleProceed}
           className={`w-full py-3.5 px-4 rounded-2xl font-bold text-sm tracking-wide text-white transition-all shadow-sm flex items-center justify-center gap-2 active:scale-98 ${
             isComplete
-              ? 'bg-[#e23744] hover:bg-[#d02c39] shadow-red-500/20 shadow-md'
+              ? 'bg-[#e23744] hover:bg-[#d02c39] shadow-red-500/25 shadow-md'
               : 'bg-[#f04f5f] hover:bg-[#e23744]'
           }`}
         >
@@ -134,15 +133,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onSkip
         </button>
 
         {/* Divider: "or" */}
-        <div className="my-3 text-xs font-semibold text-slate-400">or</div>
+        <div className="my-2.5 text-xs font-semibold text-slate-400">or</div>
 
         {/* Social Auth Circles */}
-        <div className="flex items-center justify-center gap-4 mb-5">
+        <div className="flex items-center justify-center gap-4 mb-4">
           {/* Google Button */}
           <button
             onClick={handleGoogleLogin}
             title="Continue with Google"
-            className="w-12 h-12 rounded-full border border-slate-200 bg-white shadow-xs hover:border-slate-300 hover:shadow-sm active:scale-95 transition-all flex items-center justify-center"
+            className="w-11 h-11 rounded-full border border-slate-200 bg-white shadow-2xs hover:border-slate-300 hover:shadow-xs active:scale-95 transition-all flex items-center justify-center"
           >
             {/* Google 'G' Multi-color SVG */}
             <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -169,10 +168,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onSkip
           <button
             onClick={() => {
               sounds.tap();
-              alert('More login methods (Truecaller, Apple ID, Email) will connect when you plug your backend!');
+              alert('More login options (Truecaller, Apple ID, SMS) will connect when you plug your backend!');
             }}
             title="More Options"
-            className="w-12 h-12 rounded-full border border-slate-200 bg-white shadow-xs hover:border-slate-300 hover:shadow-sm active:scale-95 transition-all flex items-center justify-center text-slate-700 font-black tracking-widest text-lg"
+            className="w-11 h-11 rounded-full border border-slate-200 bg-white shadow-2xs hover:border-slate-300 hover:shadow-xs active:scale-95 transition-all flex items-center justify-center text-slate-700 font-black tracking-widest text-base"
           >
             •••
           </button>
@@ -188,14 +187,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onSkip
             >
               Terms of Service
             </button>
-            <span>•</span>
             <button
               onClick={() => handleOpenLegal('Privacy Policy')}
               className="underline hover:text-slate-900"
             >
               Privacy Policy
             </button>
-            <span>•</span>
             <button
               onClick={() => handleOpenLegal('Content Policy')}
               className="underline hover:text-slate-900"
@@ -206,7 +203,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onSkip
         </div>
       </div>
 
-      {/* OTP Modal */}
+      {/* OTP Verification Bottom Sheet */}
       <OtpModal
         isOpen={showOtpModal}
         phoneNumber={phoneNumber}
@@ -220,11 +217,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onSkip
       {/* Legal Info Simple Modal */}
       {showTermsModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
           onClick={() => setShowTermsModal(false)}
         >
           <div
-            className="bg-white rounded-2xl max-w-sm w-full p-5 shadow-xl animate-in zoom-in-95"
+            className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl animate-in zoom-in-95"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-base font-bold text-slate-900 mb-2">{activeModalTitle}</h3>
@@ -233,7 +230,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onSkip
             </p>
             <button
               onClick={() => setShowTermsModal(false)}
-              className="mt-4 w-full bg-slate-900 text-white font-bold py-2.5 rounded-xl text-xs active:scale-98"
+              className="mt-4 w-full bg-[#008b3e] text-white font-bold py-3 rounded-xl text-xs active:scale-98"
             >
               Close
             </button>

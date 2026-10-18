@@ -81,13 +81,13 @@ export function App() {
 
   // Side-by-side replica view matching Page 4 of the user's design attachments
   const renderSideBySide = (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-6xl mx-auto items-start">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto items-start">
       {/* 1. Splash Screen Card */}
       <div className="flex flex-col items-center">
         <div className="text-xs font-black uppercase tracking-wider text-slate-400 mb-2 px-3 py-1 bg-slate-900 rounded-full border border-slate-800">
-          Screen 1 • Splash Branding
+          Screen 1 • Splash
         </div>
-        <div className="w-[360px] h-[740px] bg-white rounded-[38px] shadow-2xl border-4 border-slate-800 overflow-hidden relative">
+        <div className="w-[340px] sm:w-[360px] h-[720px] bg-white rounded-[40px] shadow-2xl border-4 border-slate-800 overflow-hidden relative">
           <SplashScreen onContinue={() => setCurrentScreen('login')} />
         </div>
       </div>
@@ -95,9 +95,9 @@ export function App() {
       {/* 2. Login Screen Card */}
       <div className="flex flex-col items-center">
         <div className="text-xs font-black uppercase tracking-wider text-slate-400 mb-2 px-3 py-1 bg-slate-900 rounded-full border border-slate-800">
-          Screen 2 • Login & Product Mosaic
+          Screen 2 • Login & Onboarding
         </div>
-        <div className="w-[360px] h-[740px] bg-white rounded-[38px] shadow-2xl border-4 border-slate-800 overflow-hidden relative">
+        <div className="w-[340px] sm:w-[360px] h-[720px] bg-white rounded-[40px] shadow-2xl border-4 border-slate-800 overflow-hidden relative">
           <LoginScreen onLoginSuccess={handleLoginSuccess} />
         </div>
       </div>
@@ -105,9 +105,9 @@ export function App() {
       {/* 3. Coming Soon Station Card */}
       <div className="flex flex-col items-center">
         <div className="text-xs font-black uppercase tracking-wider text-slate-400 mb-2 px-3 py-1 bg-slate-900 rounded-full border border-slate-800">
-          Screen 3 • Station / Coming Soon
+          Screen 3 • Coming Soon Station
         </div>
-        <div className="w-[360px] h-[740px] bg-white rounded-[38px] shadow-2xl border-4 border-slate-800 overflow-hidden relative">
+        <div className="w-[340px] sm:w-[360px] h-[720px] bg-white rounded-[40px] shadow-2xl border-4 border-slate-800 overflow-hidden relative">
           <ComingSoonScreen
             currentStation={currentStation}
             phoneNumber={phoneNumber}
