@@ -24,84 +24,84 @@ export const ComingSoonScreen: React.FC<ComingSoonScreenProps> = ({
   const [showHelpModal, setShowHelpModal] = useState(false);
 
   return (
-    <div className="relative w-full h-full min-h-[720px] bg-[#E7EEF5] flex flex-col justify-between overflow-hidden select-none">
-      {/* 1. Exact High-Resolution Screen 3 Artwork from Design Mockup */}
-      <div className="relative w-full h-full flex flex-col">
+    <div className="w-full h-full bg-[#A5BAD3] flex items-center justify-center overflow-hidden select-none relative">
+      {/* Aspect-Locked Responsive Container: Guarantees 100% Fit on any Mobile Screen without cropping */}
+      <div className="relative aspect-[1125/2400] w-full h-full max-w-full max-h-full flex items-center justify-center">
+        {/* Full-Bleed Exact Design Artwork */}
         <img
           src="/extracted_designs/mockup_screen_3.png"
           alt="RailQuick Coming Soon Station"
-          className="w-full h-full object-cover object-top select-none pointer-events-none"
+          className="w-full h-full object-contain select-none pointer-events-none drop-shadow-sm"
         />
 
-        {/* 2. Interactive Hotspots over the Exact Design Elements */}
+        {/* --- Interactive Hotspots Mapped Exactly to Design Elements --- */}
 
-        {/* Hotspot A: Top Location & Unserviceable Area Header (Click to switch stations) */}
+        {/* 1. Header: Location & Unserviceable Area (Click to select/change station) */}
         <button
           type="button"
           onClick={() => {
             sounds.tap();
             setShowPickerModal(true);
           }}
-          className="absolute top-[3.2%] left-[4.5%] w-[68%] h-[6.5%] rounded-2xl active:bg-black/10 transition-colors cursor-pointer group flex items-start justify-start text-left focus:outline-none"
-          title="Click to select or change Station"
+          className="absolute top-[2.2%] left-[4%] w-[70%] h-[7%] rounded-2xl active:bg-black/10 transition-colors cursor-pointer focus:outline-none"
+          title="Change Station"
         >
-          {/* Subtle live indicator pulse badge to show it is interactive */}
-          <span className="sr-only">Select Station</span>
+          <span className="sr-only">Change Station</span>
         </button>
 
-        {/* Hotspot B: Top-Right Profile Avatar (Click to open profile/support) */}
+        {/* 2. Header: Profile Icon */}
         <button
           type="button"
           onClick={() => {
             sounds.tap();
             setShowProfileDrawer(true);
           }}
-          className="absolute top-[3.2%] right-[5%] w-[12%] h-[6.5%] rounded-full active:bg-black/15 transition-colors cursor-pointer focus:outline-none"
-          title="Passenger Profile & Support"
+          className="absolute top-[2.2%] right-[4%] w-[13%] h-[7%] rounded-full active:bg-black/15 transition-colors cursor-pointer focus:outline-none"
+          title="Passenger Account Profile"
         >
           <span className="sr-only">Profile</span>
         </button>
 
-        {/* Hotspot C: Green "Request RailQuick in your area" Primary Button */}
+        {/* 3. Primary Green CTA: "Request RailQuick in your area" */}
         <button
           type="button"
           onClick={() => {
             sounds.tap();
             setShowRequestModal(true);
           }}
-          className="absolute bottom-[8.5%] left-[6%] w-[88%] h-[6.8%] rounded-2xl cursor-pointer active:scale-[0.98] active:brightness-95 transition-all shadow-md focus:outline-none"
+          className="absolute bottom-[7.8%] left-[5%] w-[90%] h-[7%] rounded-2xl cursor-pointer active:scale-[0.97] active:brightness-95 transition-all focus:outline-none"
           title="Request RailQuick in your area"
         >
           <span className="sr-only">Request RailQuick in your area</span>
         </button>
 
-        {/* Hotspot D: "Need help?" Link */}
+        {/* 4. Footer: "Need help?" */}
         <button
           type="button"
           onClick={() => {
             sounds.tap();
             setShowHelpModal(true);
           }}
-          className="absolute bottom-[3.2%] left-[20%] w-[25%] h-[3.5%] cursor-pointer active:opacity-60 transition-opacity focus:outline-none"
-          title="24x7 Train Delivery Help"
+          className="absolute bottom-[2.6%] left-[18%] w-[27%] h-[4%] cursor-pointer active:opacity-60 transition-opacity focus:outline-none"
+          title="Need help?"
         >
           <span className="sr-only">Need help?</span>
         </button>
 
-        {/* Hotspot E: "Get updates on Instagram" Link */}
+        {/* 5. Footer: "Get updates on Instagram" */}
         <a
           href="https://instagram.com"
           target="_blank"
           rel="noopener noreferrer"
           onClick={() => sounds.tap()}
-          className="absolute bottom-[3.2%] right-[16%] w-[48%] h-[3.5%] cursor-pointer active:opacity-60 transition-opacity focus:outline-none"
+          className="absolute bottom-[2.6%] right-[15%] w-[48%] h-[4%] cursor-pointer active:opacity-60 transition-opacity focus:outline-none"
           title="Get updates on Instagram"
         >
           <span className="sr-only">Get updates on Instagram</span>
         </a>
       </div>
 
-      {/* 3. Interactive Modals & Drawers */}
+      {/* Interactive Bottom Sheet Modals */}
       <RequestAreaModal
         isOpen={showRequestModal}
         stationName={`${currentStation.name} (${currentStation.pocketName || 'Platform A2'})`}
