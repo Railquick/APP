@@ -24,19 +24,19 @@ export const ComingSoonScreen: React.FC<ComingSoonScreenProps> = ({
   const [showHelpModal, setShowHelpModal] = useState(false);
 
   return (
-    <div className="w-full h-full bg-[#A5BAD3] flex items-center justify-center overflow-hidden select-none relative">
-      {/* Aspect-Locked Responsive Container: Guarantees 100% Fit on any Mobile Screen without cropping */}
+    <div className="w-full h-full bg-gradient-to-b from-[#A5B9D2] via-[#BACBDD] to-white flex items-center justify-center overflow-hidden select-none relative">
+      {/* 100% Fit for Mobile Phone Screen */}
       <div className="relative aspect-[1125/2400] w-full h-full max-w-full max-h-full flex items-center justify-center">
-        {/* Full-Bleed Exact Design Artwork */}
+        {/* Full-Bleed Design Artwork */}
         <img
           src="/extracted_designs/mockup_screen_3.png"
           alt="RailQuick Coming Soon Station"
-          className="w-full h-full object-contain select-none pointer-events-none drop-shadow-sm"
+          className="w-full h-full object-contain select-none pointer-events-none"
         />
 
-        {/* --- Interactive Hotspots Mapped Exactly to Design Elements --- */}
+        {/* --- Interactive Hotspots --- */}
 
-        {/* 1. Header: Location & Unserviceable Area (Click to select/change station) */}
+        {/* 1. Header: Location & Unserviceable Area (Tap to switch station / test live store) */}
         <button
           type="button"
           onClick={() => {
