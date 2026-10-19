@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { ChevronDown, MapPin, Train } from 'lucide-react';
 import { RequestAreaModal } from '../components/RequestAreaModal';
 import { StationPickerModal } from '../components/StationPickerModal';
 import { ProfileDrawer } from '../components/ProfileDrawer';
@@ -24,44 +23,31 @@ export const ComingSoonScreen: React.FC<ComingSoonScreenProps> = ({
   const [showProfileDrawer, setShowProfileDrawer] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
 
-  const trainLabel = currentStation.trainName || currentStation.name || '12952 Rajdhani Express';
-
   return (
-    <div className="w-full h-full bg-gradient-to-b from-[#A5B9D2] via-[#BACBDD] to-white flex items-center justify-center overflow-hidden select-none relative">
-      {/* 100% Fit for Mobile Phone Screen */}
+    <div className="w-full h-full bg-white flex items-center justify-center overflow-hidden select-none relative">
+      {/* Aspect-Locked Container (1125/2400) - Exact same size for all 3 pages */}
       <div className="relative aspect-[1125/2400] w-full h-full max-w-full max-h-full flex items-center justify-center">
-        {/* Full-Bleed Design Artwork */}
+        {/* Full-Bleed Exact Figma Screen 3 Artwork */}
         <img
           src="/extracted_designs/mockup_screen_3.png"
           alt="RailQuick Coming Soon Station"
           className="w-full h-full object-contain select-none pointer-events-none"
         />
 
-        {/* --- Dynamic Train Header Overlay (Showing Train Name as requested) --- */}
-        <div
+        {/* --- Interactive Hotspots over the Exact Figma Elements --- */}
+
+        {/* 1. Header: Location & Unserviceable Area (Tap to switch station / train) */}
+        <button
+          type="button"
           onClick={() => {
             sounds.tap();
             setShowPickerModal(true);
           }}
-          className="absolute top-[2.4%] left-[4.2%] w-[72%] h-[7%] flex flex-col justify-center px-2 rounded-2xl bg-[#A5B9D2]/95 backdrop-blur-xs cursor-pointer active:opacity-85 transition-opacity"
-          title="Click to change Train / Station"
+          className="absolute top-[3.8%] left-[7.5%] w-[68%] h-[6.8%] rounded-2xl active:bg-black/10 transition-colors cursor-pointer focus:outline-none"
+          title="Select Station / Train"
         >
-          <span className="text-[13px] sm:text-[14px] font-black text-slate-900 tracking-tight leading-tight">
-            {currentStation.isServiceable ? 'Serviceable Train ⚡' : 'Unserviceable train'}
-          </span>
-          <div className="flex items-center gap-1 mt-0.5 text-slate-700 text-[10px] sm:text-[11px] font-bold">
-            <span className="truncate max-w-[155px] sm:max-w-[180px] text-slate-900">
-              {trainLabel}
-            </span>
-            <span className="text-slate-500">📍</span>
-            <span className="truncate max-w-[65px] text-slate-600 font-normal">
-              {currentStation.addressSnippet || 'Coach B3...'}
-            </span>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-700 shrink-0" />
-          </div>
-        </div>
-
-        {/* --- Interactive Hotspots --- */}
+          <span className="sr-only">Select Station / Train</span>
+        </button>
 
         {/* 2. Header: Profile Icon */}
         <button
@@ -70,23 +56,23 @@ export const ComingSoonScreen: React.FC<ComingSoonScreenProps> = ({
             sounds.tap();
             setShowProfileDrawer(true);
           }}
-          className="absolute top-[2.2%] right-[4%] w-[13%] h-[7%] rounded-full active:bg-black/15 transition-colors cursor-pointer focus:outline-none"
+          className="absolute top-[3.8%] right-[5.5%] w-[12%] h-[6.8%] rounded-full active:bg-black/15 transition-colors cursor-pointer focus:outline-none"
           title="Passenger Account Profile"
         >
           <span className="sr-only">Profile</span>
         </button>
 
-        {/* 3. Primary Green CTA: "Request RailQuick in your area" */}
+        {/* 3. Primary Green Button: "Request RailQuick in your area" */}
         <button
           type="button"
           onClick={() => {
             sounds.tap();
             setShowRequestModal(true);
           }}
-          className="absolute bottom-[7.8%] left-[5%] w-[90%] h-[7%] rounded-2xl cursor-pointer active:scale-[0.97] active:brightness-95 transition-all focus:outline-none"
-          title="Request RailQuick for your train"
+          className="absolute top-[86.5%] left-[8%] w-[84%] h-[6.2%] rounded-2xl cursor-pointer active:scale-[0.98] active:brightness-95 transition-all focus:outline-none"
+          title="Request RailQuick in your area"
         >
-          <span className="sr-only">Request RailQuick for your train</span>
+          <span className="sr-only">Request RailQuick in your area</span>
         </button>
 
         {/* 4. Footer: "Need help?" */}
@@ -96,7 +82,7 @@ export const ComingSoonScreen: React.FC<ComingSoonScreenProps> = ({
             sounds.tap();
             setShowHelpModal(true);
           }}
-          className="absolute bottom-[2.6%] left-[18%] w-[27%] h-[4%] cursor-pointer active:opacity-60 transition-opacity focus:outline-none"
+          className="absolute top-[92.5%] left-[22%] w-[22%] h-[3.8%] cursor-pointer active:opacity-60 transition-opacity focus:outline-none"
           title="Need help?"
         >
           <span className="sr-only">Need help?</span>
@@ -108,7 +94,7 @@ export const ComingSoonScreen: React.FC<ComingSoonScreenProps> = ({
           target="_blank"
           rel="noopener noreferrer"
           onClick={() => sounds.tap()}
-          className="absolute bottom-[2.6%] right-[15%] w-[48%] h-[4%] cursor-pointer active:opacity-60 transition-opacity focus:outline-none"
+          className="absolute top-[92.5%] right-[18%] w-[42%] h-[3.8%] cursor-pointer active:opacity-60 transition-opacity focus:outline-none"
           title="Get updates on Instagram"
         >
           <span className="sr-only">Get updates on Instagram</span>
@@ -118,7 +104,7 @@ export const ComingSoonScreen: React.FC<ComingSoonScreenProps> = ({
       {/* Interactive Bottom Sheet Modals */}
       <RequestAreaModal
         isOpen={showRequestModal}
-        stationName={`${trainLabel} (${currentStation.addressSnippet || 'Coach B3'})`}
+        stationName={`${currentStation.name} (${currentStation.addressSnippet || 'Platform A2'})`}
         onClose={() => setShowRequestModal(false)}
       />
 
