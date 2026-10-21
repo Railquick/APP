@@ -1,143 +1,124 @@
-import React, { useState } from 'react';
-import { GoogleAuthModal } from '../components/GoogleAuthModal';
-import { sounds } from '../services/soundEffects';
-import { UserProfile } from '../types';
+import { useEffect, useState } from 'react';
+import { AlertCircle } from 'lucide-react';
+import collage from '../assets/login-collage.jpg';
+import { GoogleLogo } from '../components/icons';
+import { env } from '../config/env';
+import { errorMessage } from '../services/api';
+import { loginWithGoogle, preloadGoogle } from '../services/auth';
+import { Session } from '../types';
 
 interface LoginScreenProps {
-  onLoginSuccess: (userOrPhone: string | UserProfile) => void;
-  onSkip?: () => void;
+  onAuthenticated: (session: Session) => void;
 }
 
-export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onSkip }) => {
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [showGoogleModal, setShowGoogleModal] = useState(false);
-  const [showTermsModal, setShowTermsModal] = useState(false);
-  const [activeModalTitle, setActiveModalTitle] = useState('');
+function Divider({ label }: { label: string }) {
+  return (
+    <div className="flex w-full items-center gap-[10px]">
+      <span className="h-px flex-1 bg-gray-200" />
+      <span className="text-[14px] font-medium text-gray-500">{label}</span>
+      <span className="h-px flex-1 bg-gray-200" />
+    </div>
+  );
+}
 
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value.replace(/\D/g, '').slice(0, 10);
-    setPhoneNumber(raw);
-  };
+function PolicyLink({ href, children }: { href: string; children: string }) {
+  return (
+    <a
+      href={href || undefined}
+      target={href ? '_blank' : undefined}
+      rel="noopener noreferrer"
+      className="text-gray-600 hover:text-black underline underline-offset-2 transition"
+    >
+      {children}
+    </a>
+  );
+}
 
-  const handleProceed = () => {
-    sounds.success();
-    const phone = phoneNumber || '9876543210';
-    onLoginSuccess(phone);
-  };
+export function LoginScreen({ onAuthenticated }: LoginScreenProps) {
+  const [error, setError] = useState('');
+  const [googleBusy, setGoogleBusy] = useState(false);
 
-  const handleGoogleSuccess = (user: UserProfile) => {
-    setShowGoogleModal(false);
-    onLoginSuccess(user);
+  useEffect(() => {
+    preloadGoogle().catch(() => undefined);
+  }, []);
+
+  const handleGoogle = async () => {
+    if (googleBusy) return;
+    setError('');
+    setGoogleBusy(true);
+
+    try {
+      const session = await loginWithGoogle();
+      if (session) {
+        onAuthenticated(session);
+      }
+    } catch (err) {
+      setError(errorMessage(err));
+      setGoogleBusy(false);
+    }
   };
 
   return (
-    <div className="w-full h-full bg-white flex items-center justify-center overflow-hidden select-none relative">
-      {/* Aspect-Locked Container (1125/2400) - Exact same size for all 3 pages */}
-      <div className="relative aspect-[1125/2400] w-full h-full max-w-full max-h-full flex items-center justify-center">
-        {/* Full-Bleed Exact Figma Screen 2 Artwork */}
-        <img
-          src="/extracted_designs/mockup_screen_2.png"
-          alt="RailQuick Login & Onboarding"
-          className="w-full h-full object-contain select-none pointer-events-none"
-        />
-
-        {/* --- Interactive Hotspots over the Exact Figma Elements --- */}
-
-        {/* 1. Interactive Phone Input Overlay */}
-        <div className="absolute top-[67%] left-[34%] w-[54%] h-[5.2%] flex items-center">
-          <input
-            type="tel"
-            inputMode="numeric"
-            maxLength={10}
-            value={phoneNumber}
-            onChange={handlePhoneChange}
-            placeholder=""
-            className="w-full h-full bg-transparent text-[13px] sm:text-[14px] font-bold text-slate-900 focus:outline-none tracking-wider"
-            title="Type 10-digit phone number"
-          />
-        </div>
-
-        {/* 2. Coral Red Primary Button: "Enter Phone Number" / "Continue" */}
-        <button
-          type="button"
-          onClick={handleProceed}
-          className="absolute top-[74.6%] left-[10.5%] w-[79%] h-[5.6%] rounded-2xl cursor-pointer active:scale-[0.98] active:brightness-95 transition-all focus:outline-none"
-          title="Login / Continue"
-        >
-          <span className="sr-only">Enter Phone Number / Continue</span>
-        </button>
-
-        {/* 3. Google Login Circular Button ('G') */}
-        <button
-          type="button"
-          onClick={() => {
-            sounds.tap();
-            setShowGoogleModal(true);
-          }}
-          className="absolute top-[85.6%] left-[37.8%] w-[11.2%] h-[5.2%] rounded-full cursor-pointer active:scale-90 transition-transform focus:outline-none"
-          title="Sign in with Google"
-        >
-          <span className="sr-only">Sign in with Google</span>
-        </button>
-
-        {/* 4. More Options Circular Button ('...') */}
-        <button
-          type="button"
-          onClick={() => {
-            sounds.tap();
-            handleProceed();
-          }}
-          className="absolute top-[85.6%] left-[54.8%] w-[11.2%] h-[5.2%] rounded-full cursor-pointer active:scale-90 transition-transform focus:outline-none"
-          title="Quick Login"
-        >
-          <span className="sr-only">Quick Login</span>
-        </button>
-
-        {/* 5. Legal Terms Footer Links */}
-        <button
-          type="button"
-          onClick={() => {
-            sounds.tap();
-            setActiveModalTitle('Terms & Privacy Policy');
-            setShowTermsModal(true);
-          }}
-          className="absolute bottom-[2.5%] left-[18%] w-[64%] h-[4.5%] cursor-pointer active:opacity-60 transition-opacity focus:outline-none"
-          title="Terms of Service & Privacy Policy"
-        >
-          <span className="sr-only">Terms of Service Privacy Policy</span>
-        </button>
-      </div>
-
-      {/* Google Sign-in Modal Sheet */}
-      <GoogleAuthModal
-        isOpen={showGoogleModal}
-        onClose={() => setShowGoogleModal(false)}
-        onSuccess={handleGoogleSuccess}
+    <main className="flex min-h-dvh flex-col bg-white pb-[max(env(safe-area-inset-bottom),24px)] pt-[env(safe-area-inset-top)]">
+      {/* Top Banner Collage */}
+      <img
+        src={collage}
+        alt="RailQuick delivery essentials collage"
+        className="block w-full select-none"
+        draggable={false}
       />
 
-      {/* Legal Info Simple Modal */}
-      {showTermsModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
-          onClick={() => setShowTermsModal(false)}
+      {/* Main Tagline */}
+      <h1 className="mt-6 px-4 text-center font-heading text-[clamp(20px,6.2vw,24px)] font-semibold leading-8 text-black">
+        India’s Train delivery app
+      </h1>
+
+      {/* Primary Authentication Content */}
+      <div className="mt-8 px-[10%] flex flex-col items-center">
+        <Divider label="Log in or sign up" />
+
+        {/* Full-width Continue with Google Button */}
+        <button
+          type="button"
+          onClick={handleGoogle}
+          disabled={googleBusy}
+          aria-label="Continue with Google"
+          className="mt-6 flex h-[50px] w-full items-center justify-center gap-3 rounded-2xl border border-gray-300 bg-white px-4 text-[16px] font-semibold text-gray-800 shadow-sm hover:bg-gray-50 active:scale-[0.99] transition duration-150 disabled:opacity-60 cursor-pointer"
         >
-          <div
-            className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl animate-in zoom-in-95"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-base font-bold text-slate-900 mb-2">{activeModalTitle}</h3>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              RailQuick ensures passenger safety and hygiene for deliveries straight to your train coach or platform seat across Indian Railway junctions.
-            </p>
-            <button
-              onClick={() => setShowTermsModal(false)}
-              className="mt-4 w-full bg-[#008b3e] text-white font-bold py-3 rounded-xl text-xs active:scale-98"
-            >
-              Close
-            </button>
+          {googleBusy ? (
+            <span className="flex items-center gap-2.5 text-gray-600">
+              <span className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-gray-700" />
+              <span>Connecting to Google...</span>
+            </span>
+          ) : (
+            <>
+              <GoogleLogo className="h-5 w-5 shrink-0" />
+              <span>Continue with Google</span>
+            </>
+          )}
+        </button>
+
+        {/* Contextual Error Message (Only shown if login action fails) */}
+        {error && (
+          <div className="mt-4 flex w-full items-start gap-2 rounded-xl bg-red-50 p-3 text-xs text-red-600 border border-red-100 animate-in fade-in">
+            <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+            <span className="leading-relaxed">{error}</span>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+
+      {/* Footer Legal & Policy Links */}
+      <p className="mt-auto px-6 pt-10 text-center text-[13px] leading-[20px] text-gray-500">
+        By continuing, you agree to our
+        <br />
+        <span className="inline-flex flex-wrap justify-center gap-x-2">
+          <PolicyLink href={env.termsUrl}>Terms of Service</PolicyLink>
+          <span>•</span>
+          <PolicyLink href={env.privacyUrl}>Privacy Policy</PolicyLink>
+          <span>•</span>
+          <PolicyLink href={env.contentPolicyUrl}>Content Policy</PolicyLink>
+        </span>
+      </p>
+    </main>
   );
-};
+}

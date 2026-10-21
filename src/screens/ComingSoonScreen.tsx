@@ -1,175 +1,405 @@
-import React, { useState } from 'react';
-import { RequestAreaModal } from '../components/RequestAreaModal';
-import { StationPickerModal } from '../components/StationPickerModal';
-import { ProfileDrawer } from '../components/ProfileDrawer';
-import { Station } from '../types';
-import { sounds } from '../services/soundEffects';
+import { useState, useEffect } from 'react';
+import {
+  ChevronDown,
+  Navigation2,
+  User,
+  CheckCircle2,
+  AlertCircle,
+  X,
+  Phone,
+  User as UserIcon,
+  ArrowLeft,
+} from 'lucide-react';
+import hero from '../assets/station-hero.jpg';
+import { env } from '../config/env';
+import { Session } from '../types';
+import { useJourney } from '../state/journey';
+import { navigate } from '../router';
+import { submitTrainRequest, fetchMyTrainRequests } from '../services/trainRequests';
+import { errorMessage } from '../services/api';
 
 interface ComingSoonScreenProps {
-  currentStation: Station;
-  phoneNumber: string;
-  onSelectStation: (station: Station) => void;
-  onLogout: () => void;
+  session: Session;
+  onLogout?: () => void;
 }
 
-export const ComingSoonScreen: React.FC<ComingSoonScreenProps> = ({
-  currentStation,
-  phoneNumber,
-  onSelectStation,
-  onLogout,
-}) => {
-  const [showRequestModal, setShowRequestModal] = useState(false);
-  const [showPickerModal, setShowPickerModal] = useState(false);
-  const [showProfileDrawer, setShowProfileDrawer] = useState(false);
-  const [showHelpModal, setShowHelpModal] = useState(false);
+export function ComingSoonScreen({ session }: ComingSoonScreenProps) {
+  const journey = useJourney();
+
+  const [helpNotice, setHelpNotice] = useState(false);
+  const [hasRequested, setHasRequested] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [requestError, setRequestError] = useState('');
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+
+  // Name prompt modal state (if user's name is not in profile)
+  const [showNameDialog, setShowNameDialog] = useState(false);
+  const [nameInput, setNameInput] = useState(session.user?.name || '');
+  const [phoneInput, setPhoneInput] = useState(session.user?.phone || '');
+  const [dialogError, setDialogError] = useState('');
+
+  // Check if current user already requested this train or area
+  useEffect(() => {
+    if (!session?.token) return;
+    let cancelled = false;
+
+    fetchMyTrainRequests(session.token)
+      .then((records) => {
+        if (cancelled) return;
+        const exists = records.some((r) => {
+          if (journey?.trainNumber) {
+            return (
+              r.trainNumber === journey.trainNumber &&
+              (r.journeyDate === journey.journeyDate ||
+                r.journeyDate === journey.journeyDateISO ||
+                !journey.journeyDate)
+            );
+          }
+          return r.trainNumber === '00000' || r.trainName.includes('Pocket A 2');
+        });
+        if (exists) {
+          setHasRequested(true);
+        }
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.token, journey?.trainNumber, journey?.journeyDate, journey?.journeyDateISO]);
+
+  const handleRequestClick = () => {
+    setRequestError('');
+    if (!session) {
+      navigate('/login');
+      return;
+    }
+
+    // Check if user has name in profile
+    const currentName = session.user?.name?.trim();
+    if (!currentName) {
+      setNameInput('');
+      setPhoneInput(session.user?.phone || '');
+      setShowNameDialog(true);
+      return;
+    }
+
+    executeSubmit(currentName, session.user?.phone);
+  };
+
+  const handleDialogSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanName = nameInput.trim();
+    if (!cleanName) {
+      setDialogError('Please enter your full name.');
+      return;
+    }
+    setDialogError('');
+    setShowNameDialog(false);
+    executeSubmit(cleanName, phoneInput.trim());
+  };
+
+  const executeSubmit = async (userName: string, userPhone?: string) => {
+    if (!session?.token) return;
+    setIsSubmitting(true);
+    setRequestError('');
+
+    try {
+      await submitTrainRequest(session.token, {
+        journeyToken: journey?.journeyToken || undefined,
+        trainNumber: journey?.trainNumber || '00000',
+        trainName:
+          journey?.trainName ||
+          (journey?.boardingStation ? `Route: ${journey.boardingStation}` : 'Pocket A 2 - Station Area'),
+        journeyDate: journey?.journeyDate || new Date().toISOString().slice(0, 10),
+        areaName: 'Pocket A 2',
+        userName,
+        userPhone: userPhone || undefined,
+      });
+
+      setHasRequested(true);
+      setShowSuccessPopup(true);
+    } catch (err) {
+      const msg = errorMessage(err);
+      if (msg.toLowerCase().includes('already requested')) {
+        setHasRequested(true);
+        setShowSuccessPopup(true);
+      } else {
+        setRequestError(msg);
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
-    <div className="w-full h-full bg-white flex items-center justify-center overflow-hidden select-none relative">
-      {/* Aspect-Locked Container (1125/2400) - Exact same size for all 3 pages */}
-      <div className="relative aspect-[1125/2400] w-full h-full max-w-full max-h-full flex items-center justify-center">
-        {/* Full-Bleed Exact Figma Screen 3 Artwork */}
-        <img
-          src="/extracted_designs/mockup_screen_3.png"
-          alt="RailQuick Coming Soon Station"
-          className="w-full h-full object-contain select-none pointer-events-none"
-        />
+    <main className="relative flex h-dvh flex-col justify-between overflow-hidden bg-white select-none">
+      {/* Station Background Art matching media_1792441196939.png */}
+      <img
+        src={hero}
+        alt="RailQuick delivery partner on station platform. Coming soon to your station."
+        className="absolute inset-0 h-full w-full object-cover object-center pointer-events-none"
+        draggable={false}
+      />
 
-        {/* --- Interactive Hotspots over the Exact Figma Elements --- */}
+      {/* Top Header matching media_1792441196939.png */}
+      <header className="relative z-30 flex items-start justify-between px-5 pt-[calc(env(safe-area-inset-top)+16px)]">
+        <div className="flex items-start gap-2.5 min-w-0">
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/80 shadow-sm text-gray-800 hover:bg-white active:scale-95 transition"
+            aria-label="Back to home"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
 
-        {/* 1. Header: Location & Unserviceable Area (Tap to switch station / train) */}
+          <div className="min-w-0">
+            <h1 className="text-[20px] font-bold leading-6 tracking-tight text-[#111]">
+              Unserviceable area
+            </h1>
+            <button
+              type="button"
+              onClick={() => navigate('/')}
+              className="mt-1 flex items-center gap-1.5 text-[14px] font-semibold text-[#222] hover:opacity-80 transition"
+            >
+              {journey ? (
+                <>
+                  <span className="shrink-0 max-w-[140px] truncate">
+                    {journey.trainNumber} - {journey.trainName}
+                  </span>
+                  <Navigation2
+                    className="h-3.5 w-3.5 shrink-0 fill-[#222] stroke-[#222]"
+                    strokeWidth={1.5}
+                    aria-hidden="true"
+                  />
+                  <span className="min-w-0 truncate max-w-[120px]">
+                    {journey.boardingStation || 'New Delhi'}
+                  </span>
+                  <ChevronDown className="h-4 w-4 shrink-0" strokeWidth={2.5} aria-hidden="true" />
+                </>
+              ) : (
+                <>
+                  <span className="shrink-0">Pocket A 2</span>
+                  <Navigation2
+                    className="h-3.5 w-3.5 shrink-0 fill-[#222] stroke-[#222]"
+                    strokeWidth={1.5}
+                    aria-hidden="true"
+                  />
+                  <span className="min-w-0 truncate">A2/20, Po...</span>
+                  <ChevronDown className="h-4 w-4 shrink-0" strokeWidth={2.5} aria-hidden="true" />
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Profile avatar circle on top right - navigates directly to /account */}
         <button
           type="button"
-          onClick={() => {
-            sounds.tap();
-            setShowPickerModal(true);
-          }}
-          className="absolute top-[3.8%] left-[7.5%] w-[68%] h-[6.8%] rounded-2xl active:bg-black/10 transition-colors cursor-pointer focus:outline-none"
-          title="Select Station / Train"
+          onClick={() => navigate('/account')}
+          aria-label="User account"
+          className="flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-full bg-[#7a7a80]/85 shadow-sm active:scale-95 hover:opacity-90 transition ml-3"
+          title="My Account"
         >
-          <span className="sr-only">Select Station / Train</span>
+          <User className="h-5 w-5 fill-white stroke-white" aria-hidden="true" />
         </button>
+      </header>
 
-        {/* 2. Header: Profile Icon */}
-        <button
-          type="button"
-          onClick={() => {
-            sounds.tap();
-            setShowProfileDrawer(true);
-          }}
-          className="absolute top-[3.8%] right-[5.5%] w-[12%] h-[6.8%] rounded-full active:bg-black/15 transition-colors cursor-pointer focus:outline-none"
-          title="Passenger Account Profile"
-        >
-          <span className="sr-only">Profile</span>
-        </button>
+      {/* Middle Spacer to keep artwork clear */}
+      <div className="flex-1 pointer-events-none" />
 
-        {/* 3. Primary Green Button: "Request RailQuick in your area" */}
-        <button
-          type="button"
-          onClick={() => {
-            sounds.tap();
-            setShowRequestModal(true);
-          }}
-          className="absolute top-[86.5%] left-[8%] w-[84%] h-[6.2%] rounded-2xl cursor-pointer active:scale-[0.98] active:brightness-95 transition-all focus:outline-none"
-          title="Request RailQuick in your area"
-        >
-          <span className="sr-only">Request RailQuick in your area</span>
-        </button>
+      {/* Bottom Action Area matching media_1792441196939.png */}
+      <div className="relative z-30 px-5 pb-[max(env(safe-area-inset-bottom),20px)] pt-6 bg-gradient-to-t from-white via-white/95 to-transparent">
+        {requestError && (
+          <div className="mb-3 flex items-start gap-2 rounded-2xl bg-amber-50 border border-amber-200/80 p-3 text-xs text-amber-900 animate-in fade-in">
+            <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-amber-600" />
+            <span>{requestError}</span>
+          </div>
+        )}
 
-        {/* 4. Footer: "Need help?" */}
-        <button
-          type="button"
-          onClick={() => {
-            sounds.tap();
-            setShowHelpModal(true);
-          }}
-          className="absolute top-[92.5%] left-[22%] w-[22%] h-[3.8%] cursor-pointer active:opacity-60 transition-opacity focus:outline-none"
-          title="Need help?"
-        >
-          <span className="sr-only">Need help?</span>
-        </button>
+        {hasRequested ? (
+          <button
+            type="button"
+            disabled
+            className="h-[50px] w-full rounded-2xl bg-emerald-700 text-[17px] font-semibold text-white shadow-md flex items-center justify-center gap-2 cursor-default"
+          >
+            <CheckCircle2 className="h-5 w-5" />
+            <span>RailQuick Requested in your area</span>
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={handleRequestClick}
+            disabled={isSubmitting}
+            className="h-[50px] w-full rounded-2xl bg-[#1AA454] text-[17px] font-semibold text-white shadow-lg shadow-emerald-700/20 active:scale-[0.99] hover:bg-[#16944b] transition flex items-center justify-center gap-2"
+          >
+            {isSubmitting ? (
+              <span className="flex items-center gap-2 text-[15px]">
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                Submitting Request...
+              </span>
+            ) : (
+              <span>Request RailQuick in your area</span>
+            )}
+          </button>
+        )}
 
-        {/* 5. Footer: "Get updates on Instagram" */}
-        <a
-          href="https://instagram.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={() => sounds.tap()}
-          className="absolute top-[92.5%] right-[18%] w-[42%] h-[3.8%] cursor-pointer active:opacity-60 transition-opacity focus:outline-none"
-          title="Get updates on Instagram"
-        >
-          <span className="sr-only">Get updates on Instagram</span>
-        </a>
+        {/* Footer Links matching screenshot */}
+        <p className="mt-3 text-center text-[14px] text-[#222]">
+          {env.supportUrl ? (
+            <a href={env.supportUrl} target="_blank" rel="noopener noreferrer" className="underline">
+              Need help?
+            </a>
+          ) : (
+            <button type="button" onClick={() => setHelpNotice(true)} className="underline">
+              Need help?
+            </button>
+          )}
+          <span className="mx-2" aria-hidden="true">
+            •
+          </span>
+          <a
+            href={env.instagramUrl || 'https://www.instagram.com/'}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline"
+          >
+            Get updates on Instagram
+          </a>
+        </p>
+
+        {helpNotice && (
+          <p role="status" className="mt-2 text-center text-[13px] text-gray-500">
+            Support contact: support@railquick.in or Rail Madad 139.
+          </p>
+        )}
       </div>
 
-      {/* Interactive Bottom Sheet Modals */}
-      <RequestAreaModal
-        isOpen={showRequestModal}
-        stationName={`${currentStation.name} (${currentStation.addressSnippet || 'Platform A2'})`}
-        onClose={() => setShowRequestModal(false)}
-      />
 
-      <StationPickerModal
-        isOpen={showPickerModal}
-        currentStation={currentStation}
-        onSelectStation={onSelectStation}
-        onClose={() => setShowPickerModal(false)}
-      />
-
-      <ProfileDrawer
-        isOpen={showProfileDrawer}
-        phoneNumber={phoneNumber}
-        onClose={() => setShowProfileDrawer(false)}
-        onLogout={onLogout}
-        onOpenHelp={() => {
-          setShowProfileDrawer(false);
-          setShowHelpModal(true);
-        }}
-      />
-
-      {/* Help Modal */}
-      {showHelpModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in"
-          onClick={() => setShowHelpModal(false)}
-        >
-          <div
-            className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl animate-in zoom-in-95"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-lg font-black text-slate-900 mb-1">RailQuick Train Support</h3>
-            <p className="text-xs text-slate-500 mb-4">We are available 24x7 for all Indian Railway passengers.</p>
-
-            <div className="space-y-2.5 text-xs">
-              <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100 flex items-center justify-between">
-                <div>
-                  <div className="font-bold text-emerald-900">WhatsApp Live Chat</div>
-                  <div className="text-emerald-700">+91 91122 33445</div>
-                </div>
-                <span className="text-emerald-700 font-bold bg-white px-2.5 py-1 rounded-lg border border-emerald-200">
-                  Chat Now
+      {/* Name Input Dialog (if user's name is not in profile) */}
+      {showNameDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="w-full max-w-sm rounded-[28px] bg-white p-6 shadow-2xl animate-in zoom-in-95 duration-150 border border-gray-100">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-100 text-[#1AA454]">
+                  <UserIcon className="h-4 w-4" />
                 </span>
+                <h3 className="text-base font-bold text-gray-900">Your Contact Details</h3>
               </div>
-
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
-                <div>
-                  <div className="font-bold text-slate-900">Toll-Free Rail Helpline</div>
-                  <div className="text-slate-600">1800-RAIL-QUICK</div>
-                </div>
-                <span className="text-slate-700 font-bold bg-white px-2.5 py-1 rounded-lg border border-slate-200">
-                  Call
-                </span>
-              </div>
+              <button
+                type="button"
+                onClick={() => setShowNameDialog(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
 
+            <p className="mt-3 text-xs text-gray-500">
+              Please enter your name so our operations team can notify you when RailQuick expands service to{' '}
+              {journey?.trainNumber ? `train #${journey.trainNumber}` : 'your route'}.
+            </p>
+
+            <form onSubmit={handleDialogSubmit} className="mt-4 space-y-3.5">
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600">
+                  Full Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={nameInput}
+                  onChange={(e) => setNameInput(e.target.value)}
+                  placeholder="e.g. Rahul Sharma"
+                  className="mt-1 w-full rounded-2xl border border-gray-200 bg-gray-50/50 px-4 py-3 text-sm font-semibold text-gray-900 focus:border-[#1AA454] focus:bg-white focus:outline-none transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-600">
+                  Mobile Number (Optional)
+                </label>
+                <div className="relative mt-1">
+                  <input
+                    type="tel"
+                    value={phoneInput}
+                    onChange={(e) => setPhoneInput(e.target.value)}
+                    placeholder="e.g. 9876543210"
+                    className="w-full rounded-2xl border border-gray-200 bg-gray-50/50 px-4 py-3 pl-10 text-sm font-semibold text-gray-900 focus:border-[#1AA454] focus:bg-white focus:outline-none transition"
+                  />
+                  <Phone className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                </div>
+              </div>
+
+              {dialogError && (
+                <p className="text-xs font-semibold text-red-600">{dialogError}</p>
+              )}
+
+              <div className="pt-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowNameDialog(false)}
+                  className="flex-1 rounded-2xl border border-gray-200 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 rounded-2xl bg-[#1AA454] py-3 text-xs font-bold text-white shadow-md hover:bg-[#16944b] transition"
+                >
+                  Submit Request
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmed Popup: Exact Text "Request Added" */}
+      {showSuccessPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-sm rounded-[32px] bg-white p-6 sm:p-7 text-center shadow-2xl animate-in zoom-in-95 duration-200 border border-gray-100">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-emerald-100 text-[#1AA454] shadow-inner mb-4">
+              <CheckCircle2 className="h-10 w-10" />
+            </div>
+
+            <h3 className="text-2xl font-black text-gray-950 tracking-tight">
+              Request Added
+            </h3>
+
+            <p className="mt-2.5 text-xs sm:text-sm font-medium text-gray-600 leading-relaxed">
+              We have successfully received your request for RailQuick
+              {journey?.trainNumber ? (
+                <>
+                  {' '}on{' '}
+                  <span className="font-bold text-gray-900">
+                    {journey.trainName} (#{journey.trainNumber})
+                  </span>
+                </>
+              ) : (
+                ' in your area'
+              )}
+              . Our operations team monitors route demand to expand seat delivery.
+            </p>
+
+            {journey?.journeyDate && (
+              <div className="mt-4 rounded-2xl bg-emerald-50/70 border border-emerald-100 p-2.5 text-xs text-emerald-900 font-semibold">
+                <span>Date: {journey.journeyDate}</span>
+              </div>
+            )}
+
             <button
-              onClick={() => setShowHelpModal(false)}
-              className="mt-5 w-full bg-[#008b3e] text-white font-bold py-3.5 rounded-xl text-xs active:scale-98 transition-all"
+              type="button"
+              onClick={() => setShowSuccessPopup(false)}
+              className="mt-6 flex h-12 w-full items-center justify-center rounded-2xl bg-[#1AA454] text-sm font-bold text-white shadow-md hover:bg-[#16944b] active:scale-[0.99] transition duration-150"
             >
-              Close
+              OK, Got it!
             </button>
           </div>
         </div>
       )}
-    </div>
+    </main>
   );
-};
+}
