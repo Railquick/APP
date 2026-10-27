@@ -183,6 +183,135 @@ async def verify_otp(payload: VerifyOTPRequest):
     }
 
 
+@router.post("/google")
+async def google_token_login(payload: dict):
+    """
+    Accepts { accessToken: str } from frontend, fetches user profile from Google,
+    upserts the user into Supabase 'users' table, and returns a valid Session with access_token and user object.
+    """
+    access_token = payload.get("accessToken") or payload.get("access_token")
+    if not access_token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Google access token is required",
+        )
+
+    userinfo_url = "https://www.googleapis.com/oauth2/v2/userinfo"
+    async with httpx.AsyncClient() as http_client:
+        try:
+            userinfo_response = await http_client.get(
+                userinfo_url,
+                headers={"Authorization": f"Bearer {access_token}"},
+            )
+        except Exception as exc:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"Error connecting to Google userinfo endpoint: {str(exc)}",
+            )
+
+        if userinfo_response.status_code != 200:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Failed to fetch user information from Google",
+            )
+
+        userinfo = userinfo_response.json()
+
+    google_email = userinfo.get("email")
+    google_name = userinfo.get("name")
+    google_avatar = userinfo.get("picture")
+
+    if not google_email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Google account has no email associated",
+        )
+
+    # Upsert the user into Supabase 'users' table (email, name, avatar_url, auth_provider="google")
+    user_res = (
+        supabase.table("users")
+        .select("*")
+        .eq("email", google_email)
+        .execute()
+    )
+
+    if user_res.data:
+        user = user_res.data[0]
+        updates = {"auth_provider": "google"}
+        if google_name:
+            updates["name"] = google_name
+        if google_avatar:
+            updates["avatar_url"] = google_avatar
+
+        update_res = (
+            supabase.table("users")
+            .update(updates)
+            .eq("id", user["id"])
+            .execute()
+        )
+        if update_res.data:
+            user = update_res.data[0]
+    else:
+        # Create user record
+        uid = None
+        try:
+            auth_user = supabase.auth.admin.create_user(
+                {"email": google_email, "email_confirm": True}
+            )
+            if auth_user and auth_user.user:
+                uid = auth_user.user.id
+        except Exception:
+            pass
+
+        user_data = {
+            "email": google_email,
+            "name": google_name,
+            "avatar_url": google_avatar,
+            "auth_provider": "google",
+        }
+        if uid:
+            user_data["id"] = uid
+
+        new_user_res = (
+            supabase.table("users")
+            .insert(user_data)
+            .execute()
+        )
+        if not new_user_res.data:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to create user account",
+            )
+        user = new_user_res.data[0]
+
+        try:
+            supabase.table("profiles").upsert(
+                {
+                    "id": user["id"],
+                    "phone": user.get("phone_number") or "",
+                    "full_name": google_name or "",
+                }
+            ).execute()
+        except Exception:
+            pass
+
+    # Issue RailQuick JWT
+    jwt_token = create_access_token(
+        data={"sub": str(user["id"]), "email": user.get("email")}
+    )
+
+    if "phone" not in user and "phone_number" in user:
+        user["phone"] = user.get("phone_number")
+
+    return {
+        "success": True,
+        "token": jwt_token,
+        "access_token": jwt_token,
+        "token_type": "bearer",
+        "user": user,
+    }
+
+
 @router.get("/google/login")
 async def google_login():
     """

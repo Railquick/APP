@@ -163,46 +163,17 @@ export async function loginWithGoogle(): Promise<Session> {
       client.requestAccessToken();
     });
 
-    try {
-      const session = await apiRequest<Session>('/api/auth/google', {
-        method: 'POST',
-        body: { accessToken },
-      });
-      return assertSession(session);
-    } catch (err) {
-      console.warn('Backend /api/auth/google error, using direct Google profile fallback:', err);
-      try {
-        const gRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        });
-        if (gRes.ok) {
-          const profile = (await gRes.json()) as any;
-          const fallbackSession: Session = {
-            token: accessToken,
-            user: {
-              id: profile.id || `usr_g_${Date.now()}`,
-              name: profile.name || 'RailQuick Traveler',
-              email: profile.email || 'user@railquick.in',
-            },
-          };
-          saveSession(fallbackSession);
-          return fallbackSession;
-        }
-      } catch (directErr) {
-        console.warn('Direct userinfo fetch failed:', directErr);
-      }
-
-      const minimalSession: Session = {
-        token: accessToken,
-        user: {
-          id: `usr_g_${Date.now()}`,
-          name: 'RailQuick Traveler',
-          email: 'user@railquick.in',
-        },
-      };
-      saveSession(minimalSession);
-      return minimalSession;
-    }
+    const rawSession = await apiRequest<any>('/api/v1/auth/google', {
+      method: 'POST',
+      body: { accessToken },
+    });
+    const session: Session = {
+      token: rawSession?.token || rawSession?.access_token,
+      user: rawSession?.user,
+    };
+    const validSession = assertSession(session);
+    saveSession(validSession);
+    return validSession;
   }
 
   // Check backend Google OAuth redirect endpoint

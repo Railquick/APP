@@ -28,13 +28,20 @@ interface RequestOptions {
  * Universal apiRequest supporting both proxy relative URLs and absolute VITE_API_BASE_URL.
  */
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const base = env.apiBaseUrl || '';
-  // Ensure route starts with /api if not already
+  const rawBase = (env.apiBaseUrl || '').replace(/\/+$/, '');
+  const base = rawBase.replace(/\/api$/, '');
+
+  // Ensure route starts with /
   let normalizedPath = path.startsWith('/') ? path : `/${path}`;
+
+  // Ensure route starts with /api without double-prepending
   if (!normalizedPath.startsWith('/api')) {
     normalizedPath = `/api${normalizedPath}`;
   }
-  const fullUrl = base ? `${base}${normalizedPath}` : normalizedPath;
+  normalizedPath = normalizedPath.replace(/^\/api\/api(?=\/|$)/, '/api');
+
+  let fullUrl = base ? `${base}${normalizedPath}` : normalizedPath;
+  fullUrl = fullUrl.replace(/\/api\/api(?=\/|$)/, '/api');
 
   let response: Response;
   try {
