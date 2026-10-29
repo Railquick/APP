@@ -85,7 +85,7 @@ def evaluate_station_delivery_eligibility(
     # 3. Real Arrival DateTime Calculation
     # Determine base date of the journey
     base_date = now_ist.date()
-    if journey_date_str and journey_date_str.strip().lower() not in ("today", ""):
+    if journey_date_str and isinstance(journey_date_str, str) and journey_date_str.strip().lower() not in ("today", ""):
         clean_date = journey_date_str.strip().split("T")[0]
         for fmt in ("%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y"):
             try:
