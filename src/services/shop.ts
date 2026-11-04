@@ -109,6 +109,10 @@ export async function createOrder(payload: CreateOrderPayload): Promise<OrderCon
         station_code: payload.deliveryStation,
         coach: payload.coach,
         seat_no: payload.seatBerth,
+        passenger_name: payload.passengerName,
+        passenger_phone: payload.userPhone,
+        pnr: payload.pnr,
+        payment_method: 'PAY_ON_DELIVERY',
         items: payload.items.map((i) => ({ product_id: i.productId, quantity: i.quantity })),
       };
 
