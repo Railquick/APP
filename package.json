@@ -1,42 +1,28 @@
 {
-  "name": "railquick-app",
-  "private": true,
+  "name": "railquick",
   "version": "1.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite --host",
-    "server": "tsx server/index.ts",
-    "python-server": "python3 -m uvicorn app.main:app --app-dir railquick-backend-main --port 8000 --host 0.0.0.0",
-    "dev:all": "concurrently -k -p \"[{name}]\" -n \"FASTAPI,NODE,VITE\" -c \"yellow,cyan,magenta\" \"npm run python-server\" \"npm run server\" \"npm run dev\"",
-    "build": "tsc && vite build",
-    "preview": "vite preview"
-  },
+  "main": "index.ts",
   "dependencies": {
-    "@supabase/supabase-js": "^2.118.0",
-    "@types/better-sqlite3": "^9.6.0",
-    "@types/express": "^5.0.6",
-    "@types/node": "^26.6.5",
-    "better-sqlite3": "^13.0.3",
-    "concurrently": "^10.0.6",
-    "dotenv": "^18.0.8",
-    "express": "^5.3.0",
-    "lucide-react": "^1.16.0",
-    "railkit": "^6.0.2",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "tsx": "^4.23.15",
-    "zod": "^4.6.7"
+    "expo": "~58.0.22",
+    "expo-image": "~58.0.18",
+    "expo-linear-gradient": "~58.0.3",
+    "expo-status-bar": "~58.0.4",
+    "lucide-react-native": "^1.68.0",
+    "react": "19.3.0",
+    "react-native": "0.88.1",
+    "react-native-reanimated": "4.7.1",
+    "react-native-safe-area-context": "~5.10.1",
+    "react-native-svg": "15.16.0"
   },
   "devDependencies": {
-    "@types/pg": "^8.23.1",
-    "@types/react": "^18.3.18",
-    "@types/react-dom": "^18.3.5",
-    "@vitejs/plugin-react": "^4.3.4",
-    "autoprefixer": "^10.4.20",
-    "pg": "^8.23.1",
-    "postcss": "^8.4.49",
-    "tailwindcss": "^3.4.17",
-    "typescript": "^5.7.2",
-    "vite": "^6.0.7"
-  }
+    "@types/react": "~19.3.0",
+    "typescript": "~6.0.3"
+  },
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
+  },
+  "private": true
 }
