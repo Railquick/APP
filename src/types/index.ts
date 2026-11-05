@@ -193,6 +193,7 @@ export interface OrderItem {
 export interface OrderConfirmation {
   orderId: string;
   orderRef: string;
+  deliveryOtp?: string;
   userPhone: string;
   passengerName: string;
   trainNumber: string;
@@ -201,6 +202,7 @@ export interface OrderConfirmation {
   deliveryStation: string;
   coach: string;
   seatBerth: string;
+  paymentMethod?: string;
   items: OrderItem[];
   subtotalPaise: number;
   deliveryFeePaise: number;

@@ -71,7 +71,9 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   if (!response.ok) {
     const code = data?.code;
     const message =
-      typeof data?.message === 'string'
+      typeof data?.detail === 'string'
+        ? data.detail
+        : typeof data?.message === 'string'
         ? data.message
         : `Something went wrong (${response.status}). Please try again.`;
 
