@@ -16,7 +16,7 @@ export const PAYMENT_METHODS: PaymentMethod[] = [
     badge: 'Seat Delivery',
     badgeType: 'seat',
     description:
-      "Hand exact cash or scan the delivery runner's live QR at Berth 36 during Kanpur Central halt.",
+      "Hand exact cash or scan the delivery runner's live QR at Berth 36 during Hazrat Nizamuddin (NZM) halt.",
     chips: ['Cash to Runner', 'Scan on Arrival'],
   },
 ];

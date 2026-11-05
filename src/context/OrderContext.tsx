@@ -11,7 +11,10 @@ export interface OrderContextType {
   orders: Order[];
   isPlacingOrder: boolean;
   orderError: string | null;
-  placeOrder: (paymentMethod: PaymentMethodId) => Promise<Order>;
+  placeOrder: (
+    paymentMethod: PaymentMethodId,
+    passengerDetails?: { name?: string; phone?: string }
+  ) => Promise<Order>;
   setActiveOrder: (order: Order | null) => void;
 }
 
@@ -28,13 +31,13 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // If there is an initial demo order or when order is placed
   useEffect(() => {
-    // If no order exists yet, we can create a default demo order for testing tracking screen directly if needed
-    if (!activeOrder && orders.length === 0) {
-      // Keep null until user places order or views existing
-    }
+    // Keep null until user places order or views existing
   }, []);
 
-  const placeOrder = async (paymentMethod: PaymentMethodId): Promise<Order> => {
+  const placeOrder = async (
+    paymentMethod: PaymentMethodId,
+    passengerDetails?: { name?: string; phone?: string }
+  ): Promise<Order> => {
     if (items.length === 0) {
       throw new Error('Your cart is empty. Please add items before checking out.');
     }
@@ -52,12 +55,13 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         paymentMethod
       );
 
-      // 2. Only on verified payment success, create order
-      const newOrder = orderService.createOrder(
+      // 2. Only on verified payment success, create order in backend
+      const newOrder = await orderService.createOrder(
         items,
         journey,
         transaction,
-        summary
+        summary,
+        passengerDetails
       );
 
       // 3. Clear active cart after successful order creation
@@ -102,4 +106,3 @@ export const useOrder = (): OrderContextType => {
 };
 
 export default OrderContext;
-

@@ -93,7 +93,11 @@ export const OrderConfirmationScreen: React.FC<OrderConfirmationScreenProps> = (
       >
         <View style={styles.innerContent}>
           {/* Order Verified Headline Banner */}
-          <SuccessHeadlineBanner orderId={orderId} />
+          <SuccessHeadlineBanner
+            orderId={orderId}
+            statusBadge={activeOrder?.statusBadge || 'Placed - Delivery at Hazrat Nizamuddin'}
+            deliveryOtp={otp}
+          />
 
           {/* Train, Berth & Station Countdown Hero Card */}
           <TrainHaltHeroCard journey={currentJourney} />

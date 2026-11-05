@@ -5,7 +5,7 @@ export const DEFAULT_RUNNER: RunnerInfo = {
   title: 'IRCTC Authorized Runner',
   rating: 4.9,
   totalDeliveries: 2430,
-  uniformTag: 'Wearing Neon Green Vest #KNP-14 • Platform 2',
+  uniformTag: 'Wearing Neon Green Vest #NZM-01 • Platform 1',
   phone: '+91 98765 43210',
   avatarUrl:
     'https://lh3.googleusercontent.com/aida-public/AB6AXuC2qJaoqzM_l7LvTFiXdizjc-OG5N2gsIcO9gSM2Hj0_rdRb9KDQwkzFU213fmJs9eQqm-PCISgXEunBIBlWYRzJI-fu_6DyYxfd5untvjSPG2QcpvUZEGdujBRa0KiZg07s4dQglgLpHIc8D0QDvVrj5lzX__T1UkrhX0lddSnkPy2oVZqug2a-85oTAAuzkviPOtHQ3eYMFVC9l_BuMnCNftkSNrPu34TGSsZL2g',

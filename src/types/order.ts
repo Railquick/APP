@@ -11,7 +11,16 @@ export interface OrderItem {
   subtotal: number;
 }
 
-export type TrackingStatus = 'confirmed' | 'packed' | 'sprinting' | 'delivered';
+export type TrackingStatus =
+  | 'confirmed'
+  | 'packed'
+  | 'sprinting'
+  | 'delivered'
+  | 'PLACED'
+  | 'CONFIRMED'
+  | 'PREPARING'
+  | 'OUT_FOR_DELIVERY'
+  | 'CANCELLED';
 
 export interface TrackingStep {
   id: string;
@@ -43,10 +52,11 @@ export interface Order {
   totalSavings: number;
   journey: JourneyDetails;
   payment: PaymentTransaction;
-  status: TrackingStatus;
+  status: TrackingStatus | string;
+  statusBadge?: string;
   otp: string;
+  deliveryOtp?: string;
   runner: RunnerInfo;
   trackingSteps: TrackingStep[];
   safetyTag: string;
 }
-

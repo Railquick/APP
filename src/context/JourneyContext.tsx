@@ -6,6 +6,7 @@ export interface JourneyContextType {
   journey: JourneyDetails;
   updateSeat: (coach: string, berth: string, berthType?: string) => void;
   updateStation: (station: string, platform: string, arrivalMins: number, haltMins: number) => void;
+  updatePassenger: (passengerName: string, passengerPhone: string) => void;
 }
 
 const JourneyContext = createContext<JourneyContextType | undefined>(undefined);
@@ -37,8 +38,16 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }));
   };
 
+  const updatePassenger = (passengerName: string, passengerPhone: string) => {
+    setJourney((prev) => ({
+      ...prev,
+      passengerName,
+      passengerPhone,
+    }));
+  };
+
   return (
-    <JourneyContext.Provider value={{ journey, updateSeat, updateStation }}>
+    <JourneyContext.Provider value={{ journey, updateSeat, updateStation, updatePassenger }}>
       {children}
     </JourneyContext.Provider>
   );
@@ -53,4 +62,3 @@ export const useJourney = (): JourneyContextType => {
 };
 
 export default JourneyContext;
-
