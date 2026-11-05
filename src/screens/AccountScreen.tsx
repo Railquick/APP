@@ -188,7 +188,7 @@ export function AccountScreen({ session, onLogout }: AccountScreenProps) {
               </button>
               <button
                 type="button"
-                onClick={() => navigate('/coming-soon')}
+                onClick={() => navigate('/essentials')}
                 className="flex-1 rounded-2xl bg-[#138848] py-2.5 text-xs font-bold text-white shadow-sm hover:bg-[#0f6f3b] transition text-center"
               >
                 Order / Request

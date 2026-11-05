@@ -413,7 +413,7 @@ export function JourneyScreen() {
           </div>
           <button
             type="button"
-            onClick={() => navigate('/coming-soon')}
+            onClick={() => navigate('/essentials')}
             className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#138848] to-[#16a34a] px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-emerald-700/25 hover:brightness-105 active:scale-[0.99] transition duration-150"
           >
             <span>Order Now</span>

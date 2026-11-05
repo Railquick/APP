@@ -15,8 +15,8 @@ import {
   CheckCircle2,
   AlertTriangle,
   X,
+  ArrowRight,
 } from 'lucide-react';
-import { CurrentTrainCard } from '../components/train/CurrentTrainCard';
 
 const CATEGORIES: Array<{ id: ProductCategory | 'all'; label: string; icon: string }> = [
   { id: 'all', label: 'All Essentials', icon: '⚡' },
@@ -40,16 +40,14 @@ export function EssentialsScreen() {
   // Cart & Checkout Drawer
   const [cartOpen, setCartOpen] = useState(false);
 
-  // Delivery Form State (pre-filled from verified journey)
-  const [passengerName, setPassengerName] = useState(journey?.passengerName || '');
+  // Delivery Form State (Pre-filled from verified journey and locked to NZM pilot hub)
+  const [passengerName, setPassengerName] = useState(journey?.passengerName || 'Passenger');
   const [phone, setPhone] = useState('9876543210');
-  const [coach, setCoach] = useState(journey?.defaultCoach || '');
-  const [seatBerth, setSeatBerth] = useState(journey?.defaultSeat || '');
-  const [deliveryStation, setDeliveryStation] = useState(
-    journey?.boardingStation?.toUpperCase().includes('NDLS') ? 'NDLS' : 'NDLS',
-  );
+  const [coach, setCoach] = useState(journey?.defaultCoach || 'B4');
+  const [seatBerth, setSeatBerth] = useState(journey?.defaultSeat || '21');
+  const paymentMethod = 'PAY_ON_DELIVERY';
+  const deliveryStation = 'NZM'; // Locked to Hazrat Nizamuddin for the pilot phase
 
-  const [deliveryMessage, setDeliveryMessage] = useState('');
   const [isSupportedStation, setIsSupportedStation] = useState(true);
 
   // Order submission state
@@ -57,7 +55,7 @@ export function EssentialsScreen() {
   const [orderError, setOrderError] = useState('');
   const [confirmedOrder, setConfirmedOrder] = useState<OrderConfirmation | null>(null);
 
-  // Load products
+  // Load products for Hazrat Nizamuddin hub
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
@@ -82,11 +80,10 @@ export function EssentialsScreen() {
 
   // Check delivery station availability
   useEffect(() => {
-    if (!deliveryStation) return;
     checkDeliverySupport(deliveryStation)
       .then((res) => {
         setIsSupportedStation(res.supported);
-        setDeliveryMessage(res.message);
+        
       })
       .catch(() => undefined);
   }, [deliveryStation]);
@@ -99,20 +96,25 @@ export function EssentialsScreen() {
       setOrderError('Please enter the passenger name.');
       return;
     }
-    if (!/^[6-9]\d{9}$/.test(phone.trim())) {
+
+    const cleanPhone = phone.trim().replace(/\D/g, '');
+    if (cleanPhone.length !== 10) {
       setOrderError('Please enter a valid 10-digit mobile number.');
       return;
     }
+
     if (!coach.trim()) {
-      setOrderError('Please enter your coach (e.g. B2, S3, A1).');
+      setOrderError('Please enter your coach (e.g. B4, S3, A1).');
       return;
     }
+
     if (!seatBerth.trim()) {
       setOrderError('Please enter your seat or berth number.');
       return;
     }
-    if (!isSupportedStation) {
-      setOrderError('Delivery is currently unavailable at this station. Only supported Delhi stations are active.');
+
+    if (cart.items.length === 0) {
+      setOrderError('Your cart is empty. Please add items before checking out.');
       return;
     }
 
@@ -121,17 +123,18 @@ export function EssentialsScreen() {
 
     try {
       const order = await createOrder({
-        userPhone: phone.trim(),
+        userPhone: cleanPhone,
         passengerName: passengerName.trim(),
         pnr: journey?.pnrData?.pnr,
-        trainNumber: journey?.trainNumber || '12987',
-        trainName: journey?.trainName || 'Express Train',
+        trainNumber: journey?.trainNumber || '12424',
+        trainName: journey?.trainName || 'Rajdhani Express',
         journeyDate: journey?.journeyDate || 'Today',
         boardingStation: journey?.boardingStation || 'New Delhi (NDLS)',
-        destinationStation: journey?.destinationStation || 'Destination',
-        deliveryStation: deliveryStation.trim().toUpperCase(),
+        destinationStation: 'Hazrat Nizamuddin (NZM)',
+        deliveryStation: 'NZM',
         coach: coach.trim().toUpperCase(),
         seatBerth: seatBerth.trim(),
+        paymentMethod: paymentMethod,
         items: cart.items.map((item) => ({
           productId: item.product.id,
           quantity: item.quantity,
@@ -142,8 +145,14 @@ export function EssentialsScreen() {
       cart.clear();
       setConfirmedOrder(order);
       setCartOpen(false);
-    } catch (err) {
-      setOrderError(errorMessage(err));
+    } catch (err: any) {
+      const status = err?.status;
+      const msg = errorMessage(err);
+      if (status === 429 || msg.toLowerCase().includes('capacity')) {
+        setOrderError('Hazrat Nizamuddin delivery runners are currently at full capacity. Please retry in 5 minutes.');
+      } else {
+        setOrderError(msg);
+      }
     } finally {
       setSubmittingOrder(false);
     }
@@ -158,16 +167,17 @@ export function EssentialsScreen() {
             type="button"
             onClick={() => navigate('/journey')}
             className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200"
+            aria-label="Back to journey"
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
 
           <div className="text-center min-w-0 px-2">
             <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">
-              Seat Delivery Active
+              Seat Delivery Active • NZM Hub
             </span>
             <h1 className="text-xs font-bold text-gray-900 leading-none truncate">
-              {journey?.trainName || 'Express Train'} • Coach {coach || 'TBD'}
+              {journey?.trainName || 'Rajdhani Express'} • Coach {coach || 'B4'}
             </h1>
           </div>
 
@@ -175,6 +185,7 @@ export function EssentialsScreen() {
             type="button"
             onClick={() => setCartOpen(true)}
             className="relative flex h-9 w-9 items-center justify-center rounded-full bg-emerald-50 text-emerald-800"
+            aria-label="Open cart"
           >
             <ShoppingBag className="h-4 w-4" />
             {cart.totals.totalItemCount > 0 && (
@@ -224,7 +235,7 @@ export function EssentialsScreen() {
         {loading ? (
           <div className="py-20 text-center">
             <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" />
-            <p className="mt-2 text-xs font-medium text-gray-500">Loading travel essentials catalog...</p>
+            <p className="mt-2 text-xs font-medium text-gray-500">Loading Hazrat Nizamuddin hub catalog...</p>
           </div>
         ) : error ? (
           <div className="rounded-2xl bg-red-50 p-4 text-center text-xs text-red-700">
@@ -342,7 +353,7 @@ export function EssentialsScreen() {
                   </p>
                   <p className="text-[10px] text-emerald-200">
                     {cart.totals.deliveryFeePaise === 0
-                      ? 'Free seat delivery included'
+                      ? 'Free seat delivery at Hazrat Nizamuddin'
                       : `₹${(cart.totals.deliveryFeePaise / 100).toFixed(0)} delivery fee`}
                   </p>
                 </div>
@@ -368,8 +379,10 @@ export function EssentialsScreen() {
                 <h2 className="text-base font-bold text-gray-900">Your Travel Essentials Cart</h2>
               </div>
               <button
+                type="button"
                 onClick={() => setCartOpen(false)}
                 className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200"
+                aria-label="Close cart"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -435,16 +448,38 @@ export function EssentialsScreen() {
                     Seat Delivery Details
                   </h3>
                   <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-                    Pre-filled from PNR
+                    NZM Pilot Phase
                   </span>
                 </div>
 
                 <div className="rounded-2xl border border-gray-200 p-3.5 bg-gray-50/50 space-y-3">
-                  <div className="flex items-center gap-2 text-xs font-bold text-gray-800">
-                    <Train className="h-4 w-4 text-emerald-600" />
-                    <span>{journey?.trainNumber || '12987'} - {journey?.trainName || 'Express'}</span>
+                  <div className="flex items-center justify-between text-xs font-bold text-gray-800">
+                    <div className="flex items-center gap-2">
+                      <Train className="h-4 w-4 text-emerald-600" />
+                      <span>{journey?.trainNumber || '12424'} - {journey?.trainName || 'Rajdhani Express'}</span>
+                    </div>
+                    <span className="rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-extrabold text-emerald-800">
+                      ON-SEAT
+                    </span>
                   </div>
 
+                  {/* Delivery Station - Locked to NZM */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-600 uppercase">
+                      Delivery Station (Locked to Pilot Hub)
+                    </label>
+                    <div className="mt-1 flex items-center justify-between rounded-xl border border-emerald-300 bg-emerald-50/80 px-3 py-2 text-xs font-bold text-emerald-950">
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-emerald-600 animate-pulse" />
+                        <span>Hazrat Nizamuddin (NZM)</span>
+                      </div>
+                      <span className="rounded-md bg-emerald-200/80 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-emerald-800">
+                        Active Pilot Hub
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Coach & Seat */}
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label className="block text-[10px] font-bold text-gray-600 uppercase">Coach</label>
@@ -452,7 +487,7 @@ export function EssentialsScreen() {
                         type="text"
                         value={coach}
                         onChange={(e) => setCoach(e.target.value.toUpperCase())}
-                        placeholder="e.g. B5, S4, A1"
+                        placeholder="e.g. B4"
                         required
                         className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-bold uppercase text-gray-900 focus:border-emerald-600 focus:outline-none"
                       />
@@ -463,30 +498,14 @@ export function EssentialsScreen() {
                         type="text"
                         value={seatBerth}
                         onChange={(e) => setSeatBerth(e.target.value)}
-                        placeholder="e.g. 22 (LB)"
+                        placeholder="e.g. 21"
                         required
                         className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-900 focus:border-emerald-600 focus:outline-none"
                       />
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-[10px] font-bold text-gray-600 uppercase">Delivery Station (Delhi Hub)</label>
-                    <select
-                      value={deliveryStation}
-                      onChange={(e) => setDeliveryStation(e.target.value)}
-                      className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-bold uppercase text-gray-900 focus:border-emerald-600 focus:outline-none"
-                    >
-                      <option value="NDLS">New Delhi (NDLS) - Active Hub</option>
-                      <option value="NZM">Hazrat Nizamuddin (NZM) - Active Hub</option>
-                      <option value="DLI">Old Delhi Junction (DLI) - Active Hub</option>
-                      <option value="ANVT">Anand Vihar Terminal (ANVT) - Active Hub</option>
-                      <option value="DEE">Delhi Sarai Rohilla (DEE) - Active Hub</option>
-                      <option value="CNB">Kanpur (CNB) - Outside Delivery Zone</option>
-                      <option value="HWH">Howrah (HWH) - Outside Delivery Zone</option>
-                    </select>
-                  </div>
-
+                  {/* Passenger Name & Phone */}
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label className="block text-[10px] font-bold text-gray-600 uppercase">Passenger Name</label>
@@ -512,39 +531,24 @@ export function EssentialsScreen() {
                       />
                     </div>
                   </div>
+
+                  {/* Payment Method */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-600 uppercase">Payment Method</label>
+                    <div className="mt-1 flex items-center justify-between rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-800">
+                      <span className="font-bold text-gray-900">Pay on Delivery</span>
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                        Cash / UPI on Berth
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Delivery Zone Notice */}
-                {!isSupportedStation ? (
-                  <div className="space-y-3">
-                    <div className="flex items-start gap-2 rounded-xl bg-amber-50 p-3 text-xs text-amber-800 border border-amber-200">
-                      <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
-                      <div>
-                        <p className="font-bold">Outside Testing Delivery Area</p>
-                        <p className="mt-0.5 text-[11px] leading-relaxed">
-                          {deliveryMessage ||
-                            'RailQuick is currently running pilot deliveries only at supported Delhi railway stations (NDLS, NZM, DLI, ANVT, DEE).'}
-                        </p>
-                      </div>
-                    </div>
-
-                    {journey?.journeyToken && (
-                      <CurrentTrainCard
-                        trainName={journey.trainName}
-                        trainNumber={journey.trainNumber}
-                        journeyDate={journey.journeyDate}
-                        journeyToken={journey.journeyToken}
-                        sourceStation={journey.boardingStation}
-                        destinationStation={journey.destinationStation}
-                      />
-                    )}
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 rounded-xl bg-emerald-50 p-2.5 text-xs text-emerald-800">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-                    <span>Station {deliveryStation} is active for on-seat delivery.</span>
-                  </div>
-                )}
+                {/* Hub Notice */}
+                <div className="flex items-center gap-2 rounded-xl bg-emerald-50 p-2.5 text-xs text-emerald-800">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                  <span>Hazrat Nizamuddin (NZM) hub is active for in-train seat delivery.</span>
+                </div>
 
                 {/* Order Bill Summary */}
                 <div className="rounded-2xl border border-gray-200 p-4 space-y-2 bg-white">
@@ -569,8 +573,9 @@ export function EssentialsScreen() {
                 </div>
 
                 {orderError && (
-                  <div className="rounded-xl bg-red-50 p-3 text-xs text-red-700">
-                    {orderError}
+                  <div className="flex items-start gap-2 rounded-xl bg-red-50 border border-red-200 p-3 text-xs text-red-700 font-semibold animate-in fade-in">
+                    <AlertTriangle className="h-4 w-4 shrink-0 text-red-600 mt-0.5" />
+                    <span>{orderError}</span>
                   </div>
                 )}
 
@@ -583,16 +588,17 @@ export function EssentialsScreen() {
                     {submittingOrder ? (
                       <span className="flex items-center gap-2">
                         <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                        Creating Order in Database...
+                        Placing Order for NZM Hub...
                       </span>
                     ) : (
                       <>
-                        <span>Place Test Order (₹{(cart.totals.totalPaise / 100).toFixed(0)})</span>
+                        <span>Confirm Order (₹{(cart.totals.totalPaise / 100).toFixed(0)})</span>
+                        <ArrowRight className="h-4 w-4" />
                       </>
                     )}
                   </button>
                   <p className="mt-1.5 text-center text-[10px] text-gray-400">
-                    Testing checkout • No real payment taken • Direct to berth
+                    Hazrat Nizamuddin (NZM) Pilot • Pay on Delivery directly at your seat
                   </p>
                 </div>
               </form>
@@ -605,57 +611,80 @@ export function EssentialsScreen() {
       {confirmedOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 animate-in fade-in duration-200">
           <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl text-center">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-emerald-100 text-emerald-700 mb-4">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-emerald-100 text-emerald-700 mb-3">
               <CheckCircle2 className="h-9 w-9" />
             </div>
 
-            <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">
-              Order Confirmed & Saved
-            </span>
+            {/* Status Badge */}
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3.5 py-1 text-xs font-bold text-emerald-800">
+              <span className="h-2 w-2 rounded-full bg-emerald-600 animate-pulse" />
+              <span>Placed - Delivery at Hazrat Nizamuddin</span>
+            </div>
 
-            <h2 className="mt-2 text-xl font-black text-gray-900">
-              Reference: #{confirmedOrder.orderRef}
+            <h2 className="mt-3 text-lg font-black text-gray-900">
+              Order ID: #{confirmedOrder.orderId || confirmedOrder.orderRef}
             </h2>
-            <p className="mt-1 text-xs text-gray-500">
-              Your travel essentials will be dispatched to Coach {confirmedOrder.coach}, Seat {confirmedOrder.seatBerth}.
-            </p>
 
-            <div className="my-4 rounded-2xl bg-gray-50 p-4 text-left text-xs space-y-2 border border-gray-100">
+            {/* 4-Digit Delivery OTP Card */}
+            <div className="my-4 rounded-2xl border-2 border-emerald-500/40 bg-gradient-to-br from-emerald-50 to-emerald-100/40 p-4">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-800">
+                4-Digit Delivery OTP
+              </p>
+              <p className="mt-1 font-mono text-3xl font-black tracking-[0.25em] text-emerald-950">
+                {confirmedOrder.deliveryOtp ||
+                  confirmedOrder.orderRef?.replace(/\D/g, '').slice(-4) ||
+                  '1234'}
+              </p>
+              <p className="mt-1.5 text-[11px] font-medium text-emerald-700">
+                Show this OTP to the delivery runner at your seat when your order arrives.
+              </p>
+            </div>
+
+            {/* Details breakdown */}
+            <div className="rounded-2xl bg-gray-50 p-4 text-left text-xs space-y-2.5 border border-gray-100">
+              <div className="flex justify-between">
+                <span className="text-gray-500">Seat & Coach:</span>
+                <span className="font-extrabold text-gray-900">
+                  Coach {confirmedOrder.coach}, Seat {confirmedOrder.seatBerth}
+                </span>
+              </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">Train:</span>
-                <span className="font-bold text-gray-900">{confirmedOrder.trainName} (#{confirmedOrder.trainNumber})</span>
+                <span className="font-bold text-gray-900">
+                  {confirmedOrder.trainName} (#{confirmedOrder.trainNumber})
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">Delivery Station:</span>
-                <span className="font-bold text-emerald-800">{confirmedOrder.deliveryStation} Hub</span>
+                <span className="font-bold text-emerald-800">Hazrat Nizamuddin (NZM)</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">Passenger:</span>
                 <span className="font-bold text-gray-900">{confirmedOrder.passengerName}</span>
               </div>
               <div className="flex justify-between border-t border-gray-200 pt-2 font-bold text-gray-900">
-                <span>Total Amount:</span>
-                <span>₹{(confirmedOrder.totalPaise / 100).toFixed(0)} ({confirmedOrder.paymentStatus})</span>
+                <span>Total Payable:</span>
+                <span>₹{(confirmedOrder.totalPaise / 100).toFixed(0)} (Pay on Delivery)</span>
               </div>
             </div>
 
-            <div className="flex gap-2">
+            <div className="mt-5 flex gap-2">
               <button
                 type="button"
                 onClick={() => {
                   setConfirmedOrder(null);
                   navigate('/');
                 }}
-                className="flex-1 rounded-2xl bg-emerald-600 py-3 text-xs font-bold text-white shadow-md hover:bg-emerald-700"
+                className="flex-1 rounded-2xl bg-emerald-600 py-3 text-xs font-bold text-white shadow-md hover:bg-emerald-700 transition active:scale-[0.99]"
               >
                 Back to Home
               </button>
               <button
                 type="button"
                 onClick={() => setConfirmedOrder(null)}
-                className="rounded-2xl border border-gray-200 px-4 py-3 text-xs font-bold text-gray-700 hover:bg-gray-50"
+                className="rounded-2xl border border-gray-200 px-4 py-3 text-xs font-bold text-gray-700 hover:bg-gray-50 transition"
               >
-                Order More
+                Close
               </button>
             </div>
           </div>
