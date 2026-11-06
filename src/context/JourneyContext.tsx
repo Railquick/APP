@@ -12,7 +12,19 @@ export interface JourneyContextType {
 const JourneyContext = createContext<JourneyContextType | undefined>(undefined);
 
 export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [journey, setJourney] = useState<JourneyDetails>(JOURNEY_DETAILS);
+  const [journey, setJourney] = useState<JourneyDetails>(() => {
+    let savedName = JOURNEY_DETAILS.passengerName;
+    if (typeof window !== 'undefined') {
+      try {
+        const storedName = localStorage.getItem('railquick_user_name');
+        if (storedName) savedName = storedName;
+      } catch {}
+    }
+    return {
+      ...JOURNEY_DETAILS,
+      passengerName: savedName,
+    };
+  });
 
   const updateSeat = (coach: string, berth: string, berthType?: string) => {
     setJourney((prev) => ({

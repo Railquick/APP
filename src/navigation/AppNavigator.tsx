@@ -128,10 +128,63 @@ export const AppNavigator: React.FC = () => {
   };
 
   useEffect(() => {
-    // Automatically transition to WelcomeScreen after 3800ms
+    let hasReturnedFromOAuth = false;
+    if (typeof window !== 'undefined') {
+      try {
+        const searchParams = new URLSearchParams(window.location.search);
+        const token = searchParams.get('token');
+        if (token) {
+          hasReturnedFromOAuth = true;
+          localStorage.setItem('railquick_token', token);
+          localStorage.setItem('access_token', token);
+
+          const name = searchParams.get('name');
+          const email = searchParams.get('email');
+          if (name) localStorage.setItem('railquick_user_name', name);
+          if (email) localStorage.setItem('railquick_user_email', email);
+
+          // Clean URL parameters cleanly without refreshing the page
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      } catch (err) {
+        console.warn('OAuth URL parameter parse warning:', err);
+      }
+    }
+
+    const tokenExists =
+      hasReturnedFromOAuth ||
+      (typeof window !== 'undefined' &&
+        Boolean(localStorage.getItem('railquick_token') || localStorage.getItem('access_token')));
+
+    // If already authenticated or returning from Google sign-in, transition directly to Home
+    const transitionDelay = hasReturnedFromOAuth ? 800 : 3800;
     const timer = setTimeout(() => {
-      handleSplashFinished();
-    }, 3800);
+      if (tokenExists) {
+        setCurrentScreen('transitioning_home');
+        splashOpacity.value = withTiming(0, {
+          duration: 400,
+          easing: Easing.in(Easing.cubic),
+        });
+        homeTranslateY.value = withTiming(0, {
+          duration: 450,
+          easing: Easing.out(Easing.cubic),
+        });
+        homeOpacity.value = withTiming(
+          1,
+          {
+            duration: 450,
+            easing: Easing.out(Easing.cubic),
+          },
+          (finished) => {
+            if (finished) {
+              runOnJS(setCurrentScreen)('home');
+            }
+          }
+        );
+      } else {
+        handleSplashFinished();
+      }
+    }, transitionDelay);
 
     return () => clearTimeout(timer);
   }, []);

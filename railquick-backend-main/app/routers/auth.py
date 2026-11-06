@@ -14,12 +14,15 @@ from app.utils.auth_utils import create_access_token
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
 
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_ID = os.getenv(
+    "GOOGLE_CLIENT_ID",
+    "355290036049-hnnuk03tbarbk1f9ivverm987nrqp5gl.apps.googleusercontent.com",
+)
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
 GOOGLE_REDIRECT_URI = os.getenv(
-    "GOOGLE_REDIRECT_URI", "http://localhost:8000/api/v1/auth/google/callback"
+    "GOOGLE_REDIRECT_URI", "https://railquick-backend.onrender.com/api/v1/auth/google/callback"
 )
-FRONTEND_REDIRECT_URL = os.getenv("FRONTEND_REDIRECT_URL", "")
+FRONTEND_REDIRECT_URL = os.getenv("FRONTEND_REDIRECT_URL", "https://railquick-one.vercel.app")
 
 
 class SendOTPRequest(BaseModel):
@@ -507,10 +510,18 @@ async def google_callback(
     )
 
     # Check for frontend redirect configuration
-    frontend_url = os.getenv("FRONTEND_REDIRECT_URL", FRONTEND_REDIRECT_URL).strip()
+    frontend_url = (
+        os.getenv("FRONTEND_REDIRECT_URL", FRONTEND_REDIRECT_URL).strip()
+        or "https://railquick-one.vercel.app"
+    )
     if frontend_url:
         separator = "&" if "?" in frontend_url else "?"
-        redirect_target = f"{frontend_url}{separator}token={access_token}"
+        redirect_params = {"token": access_token}
+        if user.get("name"):
+            redirect_params["name"] = user["name"]
+        if user.get("email"):
+            redirect_params["email"] = user["email"]
+        redirect_target = f"{frontend_url}{separator}{urlencode(redirect_params)}"
         return RedirectResponse(url=redirect_target)
 
     return {

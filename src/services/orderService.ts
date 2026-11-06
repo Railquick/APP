@@ -80,6 +80,9 @@ class OrderService {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            ...(typeof window !== 'undefined' && (localStorage.getItem('railquick_token') || localStorage.getItem('access_token'))
+              ? { Authorization: `Bearer ${localStorage.getItem('railquick_token') || localStorage.getItem('access_token')}` }
+              : {}),
           },
           body: JSON.stringify(fastApiPayload),
         });

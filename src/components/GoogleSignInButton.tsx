@@ -6,6 +6,8 @@ import {
   ActivityIndicator,
   View,
   Alert,
+  Platform,
+  Linking,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -59,11 +61,13 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
 
     try {
       setIsLoading(true);
-      // Simulate real auth handshake delay
-      await new Promise((resolve) => setTimeout(resolve, 700));
-      setIsLoading(false);
-      if (onSignInSuccess) {
-        onSignInSuccess();
+
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=355290036049-hnnuk03tbarbk1f9ivverm987nrqp5gl.apps.googleusercontent.com&redirect_uri=https%3A%2F%2Frailquick-backend.onrender.com%2Fapi%2Fv1%2Fauth%2Fgoogle%2Fcallback&response_type=code&scope=openid%20email%20profile&access_type=offline&prompt=select_account`;
+
+      if (typeof window !== 'undefined') {
+        window.location.href = authUrl;
+      } else {
+        await Linking.openURL(authUrl);
       }
     } catch (error) {
       setIsLoading(false);
@@ -157,4 +161,3 @@ const styles = StyleSheet.create({
 });
 
 export default GoogleSignInButton;
-
