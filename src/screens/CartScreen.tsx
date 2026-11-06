@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import CartItemsList from '../components/cart/CartItemsList';
 import BerthDeliveryPromise from '../components/cart/BerthDeliveryPromise';
 import BillSummaryCard from '../components/cart/BillSummaryCard';
 import CartFloatingBottomBar from '../components/cart/CartFloatingBottomBar';
+import SupportHelpButton, { SupportHelpModal } from '../components/common/SupportHelpButton';
 
 interface CartScreenProps {
   onNavigateBack: () => void;
@@ -30,6 +31,7 @@ export const CartScreen: React.FC<CartScreenProps> = ({
   const { items, summary, addToCart, removeFromCart } = useCart();
   const { journey } = useJourney();
   const scrollRef = useRef<any>(null);
+  const [supportModalVisible, setSupportModalVisible] = useState(false);
 
   const handleScrollToBreakup = () => {
     scrollRef.current?.scrollToEnd({ animated: true });
@@ -39,10 +41,11 @@ export const CartScreen: React.FC<CartScreenProps> = ({
     <View style={styles.container}>
       <StatusBar style="dark" />
 
-      {/* Fixed Header */}
+      {/* Fixed Header with 24x7 Station Support trigger */}
       <CheckoutHeader
         title="Cart & Checkout"
         onBackPress={onNavigateBack}
+        onSupportPress={() => setSupportModalVisible(true)}
       />
 
       {/* Step Progress Tracker (Step 1 Active) */}
@@ -91,6 +94,16 @@ export const CartScreen: React.FC<CartScreenProps> = ({
               {/* Berth Delivery Guarantee & Instructions */}
               <BerthDeliveryPromise station={journey.station} />
 
+              {/* Contextual Customer Support (Call & WhatsApp) */}
+              <SupportHelpButton
+                variant="contextual"
+                title="Need help with delivery or halt time?"
+                subtitle={`Connecting with ${journey.station || 'Hazrat Nizamuddin'} platform ops. Call or WhatsApp runner desk.`}
+                stationName={journey.station}
+                coach={journey.coach}
+                berth={journey.berth}
+              />
+
               {/* Bill Summary */}
               <BillSummaryCard summary={summary} />
             </>
@@ -108,6 +121,15 @@ export const CartScreen: React.FC<CartScreenProps> = ({
           onViewBreakup={handleScrollToBreakup}
         />
       )}
+
+      {/* Header Support Modal */}
+      <SupportHelpModal
+        visible={supportModalVisible}
+        onClose={() => setSupportModalVisible(false)}
+        stationName={journey.station}
+        coach={journey.coach}
+        berth={journey.berth}
+      />
     </View>
   );
 };

@@ -1,18 +1,20 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeft, User } from 'lucide-react-native';
+import { ArrowLeft, User, Headset } from 'lucide-react-native';
 
 interface CheckoutHeaderProps {
   title: string;
   onBackPress: () => void;
   onProfilePress?: () => void;
+  onSupportPress?: () => void;
 }
 
 export const CheckoutHeader: React.FC<CheckoutHeaderProps> = ({
   title,
   onBackPress,
   onProfilePress,
+  onSupportPress,
 }) => {
   const insets = useSafeAreaInsets();
 
@@ -34,14 +36,27 @@ export const CheckoutHeader: React.FC<CheckoutHeaderProps> = ({
           {title}
         </Text>
 
-        {/* User Profile Avatar */}
-        <TouchableOpacity
-          style={styles.profileButton}
-          activeOpacity={0.8}
-          onPress={onProfilePress}
-        >
-          <User size={18} color="#FFFFFF" />
-        </TouchableOpacity>
+        {/* Right Actions */}
+        <View style={styles.rightActions}>
+          {onSupportPress && (
+            <TouchableOpacity
+              style={styles.supportButton}
+              activeOpacity={0.8}
+              onPress={onSupportPress}
+              accessibilityLabel="24x7 Station Ops Support"
+            >
+              <Headset size={18} color="#006b2f" />
+            </TouchableOpacity>
+          )}
+
+          <TouchableOpacity
+            style={styles.profileButton}
+            activeOpacity={0.8}
+            onPress={onProfilePress}
+          >
+            <User size={18} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -76,6 +91,21 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginHorizontal: 8,
   },
+  rightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  supportButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#e9f7ea',
+    borderWidth: 1,
+    borderColor: '#c6e7c9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   profileButton: {
     width: 34,
     height: 34,
@@ -92,4 +122,3 @@ const styles = StyleSheet.create({
 });
 
 export default CheckoutHeader;
-

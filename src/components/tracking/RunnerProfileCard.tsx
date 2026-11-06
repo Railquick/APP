@@ -1,28 +1,37 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { BadgeCheck, Phone, MessageSquare, Shield } from 'lucide-react-native';
 import { RunnerInfo } from '../../types/order';
+import {
+  openStationCall,
+  openStationWhatsApp,
+} from '../common/SupportHelpButton';
+import { SUPPORT_CONFIG } from '../../config/constants';
 
 interface RunnerProfileCardProps {
   runner: RunnerInfo;
+  coach?: string;
+  berth?: string;
+  orderId?: string;
 }
 
-export const RunnerProfileCard: React.FC<RunnerProfileCardProps> = ({ runner }) => {
+export const RunnerProfileCard: React.FC<RunnerProfileCardProps> = ({
+  runner,
+  coach,
+  berth,
+  orderId,
+}) => {
   const handleCall = () => {
-    Alert.alert(
-      'Call Station Runner',
-      `Connecting to ${runner.name} (${runner.phone})...\nRunner is standing at Coach marker line on Platform.`,
-      [{ text: 'Dismiss' }]
-    );
+    openStationCall(runner.phone || SUPPORT_CONFIG.PHONE_NUMBER);
   };
 
   const handleChat = () => {
-    Alert.alert(
-      'In-App Runner Chat',
-      `Chat session opened with ${runner.name}.\n"Hello passenger! I have your sealed order and I'm at your coach."`,
-      [{ text: 'OK' }]
-    );
+    const coachText = coach ? ` at Coach ${coach}` : '';
+    const berthText = berth ? `, Berth ${berth}` : '';
+    const orderText = orderId ? ` (Order ${orderId})` : '';
+    const message = `Hi ${runner.name}, I need assistance with my RailQuick order${orderText}${coachText}${berthText} at ${SUPPORT_CONFIG.STATION_NAME} Station.`;
+    openStationWhatsApp(SUPPORT_CONFIG.WHATSAPP_NUMBER, message);
   };
 
   return (
@@ -194,4 +203,3 @@ const styles = StyleSheet.create({
 });
 
 export default RunnerProfileCard;
-

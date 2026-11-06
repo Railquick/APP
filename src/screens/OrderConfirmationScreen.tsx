@@ -12,6 +12,7 @@ import RunnerProfileCard from '../components/tracking/RunnerProfileCard';
 import OrderSummaryAccordion from '../components/tracking/OrderSummaryAccordion';
 import DepartureGuaranteePolicy from '../components/tracking/DepartureGuaranteePolicy';
 import TrackingBottomActions from '../components/tracking/TrackingBottomActions';
+import { SupportHelpButton } from '../components/common/SupportHelpButton';
 import { DEFAULT_RUNNER, generateTrackingSteps } from '../services/trackingService';
 
 interface OrderConfirmationScreenProps {
@@ -106,7 +107,24 @@ export const OrderConfirmationScreen: React.FC<OrderConfirmationScreenProps> = (
           <StationFulfillmentTimeline steps={trackingSteps} otp={otp} />
 
           {/* Assigned Station Runner Profile Card */}
-          <RunnerProfileCard runner={runner} />
+          <RunnerProfileCard
+            runner={runner}
+            coach={currentJourney.coach}
+            berth={currentJourney.berth}
+            orderId={orderId}
+          />
+
+          {/* Contact Station Runner & 24x7 Support Widget */}
+          <SupportHelpButton
+            variant="contextual"
+            title={`Contact your ${currentJourney.station || 'Hazrat Nizamuddin'} station runner`}
+            subtitle={`Runner ${runner.name} is on platform standby. Need emergency berth delivery coordination or halt details?`}
+            stationName={currentJourney.station}
+            runnerName={runner.name}
+            orderId={orderId}
+            coach={currentJourney.coach}
+            berth={currentJourney.berth}
+          />
 
           {/* Order Summary Collapsible Accordion */}
           <OrderSummaryAccordion
@@ -125,6 +143,10 @@ export const OrderConfirmationScreen: React.FC<OrderConfirmationScreenProps> = (
           <TrackingBottomActions
             onBackToHome={onNavigateHome}
             station={currentJourney.station}
+            runnerName={runner.name}
+            orderId={orderId}
+            coach={currentJourney.coach}
+            berth={currentJourney.berth}
           />
         </View>
       </ScrollView>
@@ -154,4 +176,3 @@ const styles = StyleSheet.create({
 });
 
 export default OrderConfirmationScreen;
-

@@ -13,6 +13,7 @@ import PaymentMethodSelector from '../components/payment/PaymentMethodSelector';
 import BerthDeliverySecurity from '../components/payment/BerthDeliverySecurity';
 import PaymentSummaryCard from '../components/payment/PaymentSummaryCard';
 import PaymentFloatingBottomBar from '../components/payment/PaymentFloatingBottomBar';
+import { SupportHelpModal } from '../components/common/SupportHelpButton';
 
 interface PaymentScreenProps {
   onNavigateBack: () => void;
@@ -36,6 +37,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({
     journey.passengerPhone || '9876543210'
   );
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [supportModalVisible, setSupportModalVisible] = useState(false);
 
   const handlePay = async () => {
     if (isPlacingOrder || isSuccess) return;
@@ -85,10 +87,11 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({
     <View style={styles.container}>
       <StatusBar style="dark" />
 
-      {/* Fixed Header */}
+      {/* Fixed Header with 24x7 Station Support trigger */}
       <CheckoutHeader
         title="Cart & Checkout"
         onBackPress={onNavigateBack}
+        onSupportPress={() => setSupportModalVisible(true)}
       />
 
       {/* Step Progress Tracker (Step 2 Active) */}
@@ -145,6 +148,15 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({
         isProcessing={isPlacingOrder}
         isSuccess={isSuccess}
         onPayPress={handlePay}
+      />
+
+      {/* Header Support Modal */}
+      <SupportHelpModal
+        visible={supportModalVisible}
+        onClose={() => setSupportModalVisible(false)}
+        stationName={journey.station}
+        coach={journey.coach}
+        berth={journey.berth}
       />
     </View>
   );
