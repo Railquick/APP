@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { Image } from 'expo-image';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -167,6 +168,19 @@ export const AppNavigator: React.FC = () => {
 
   return (
     <View style={styles.container}>
+      {/* GLOBAL POST-AUTH MANDALA BACKGROUND (Applied across screens after Google Auth) */}
+      {(currentScreen === 'home' ||
+        currentScreen === 'transitioning_home' ||
+        currentScreen === 'cart' ||
+        currentScreen === 'payment' ||
+        currentScreen === 'order_confirmation') && (
+        <Image
+          source={require('../assets/images/app_mandala_bg.jpg')}
+          style={StyleSheet.absoluteFill}
+          contentFit="cover"
+        />
+      )}
+
       {/* SCREEN 6: Order Confirmation & Live Tracking */}
       {currentScreen === 'order_confirmation' && (
         <Animated.View style={[StyleSheet.absoluteFill, trackingAnimatedStyle]}>
@@ -232,7 +246,7 @@ export const AppNavigator: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#04522B',
+    backgroundColor: '#FAF5EA',
   },
 });
 

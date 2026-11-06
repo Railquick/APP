@@ -1,11 +1,15 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
   Alert,
+  TouchableOpacity,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { StatusBar } from 'expo-status-bar';
 import {
   Smartphone,
@@ -31,6 +35,8 @@ import MarketplaceProductCard from '../components/marketplace/MarketplaceProduct
 import BerthGuaranteeCard from '../components/marketplace/BerthGuaranteeCard';
 import FloatingCartBar from '../components/marketplace/FloatingCartBar';
 import ProductDetailModal from '../components/marketplace/ProductDetailModal';
+import RailQuickSpotlightCarousel from '../components/marketplace/RailQuickSpotlightCarousel';
+import CategoryShowcaseGrid from '../components/marketplace/CategoryShowcaseGrid';
 import MarketplaceBottomNav, {
   BottomNavTab,
 } from '../components/marketplace/MarketplaceBottomNav';
@@ -48,10 +54,40 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const [selectedProduct, setSelectedProduct] = useState<ProductItem | null>(null);
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<BottomNavTab>('home');
+  const [isNavHidden, setIsNavHidden] = useState<boolean>(false);
+
+  // Scroll direction detection for floating nav hide/show
+  const lastScrollY = useRef<number>(0);
+  const scrollThreshold = 12; // px before we toggle
+
+  const handleScroll = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const currentY = e.nativeEvent.contentOffset.y;
+      const diff = currentY - lastScrollY.current;
+      if (Math.abs(diff) > scrollThreshold) {
+        setIsNavHidden(diff > 0 && currentY > 80);
+        lastScrollY.current = currentY;
+      }
+    },
+    []
+  );
 
   // Filter products by category
   const mobileProducts = useMemo(
     () => PRODUCTS.filter((p) => p.category === 'mobile'),
+    []
+  );
+  const snacksProducts = useMemo(
+    () =>
+      PRODUCTS.filter(
+        (p) =>
+          p.category === 'drinks' ||
+          p.category === 'sweets' ||
+          p.id === 'prod-lays' ||
+          p.id === 'prod-kurkure' ||
+          p.id === 'prod-silk' ||
+          p.id === 'prod-coke'
+      ),
     []
   );
   const womenHygieneProducts = useMemo(
@@ -82,6 +118,47 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     () => PRODUCTS.filter((p) => p.category === 'travel-accessories'),
     []
   );
+
+  // Dynamic filter products for any selected category
+  const filteredCategoryProducts = useMemo(() => {
+    if (selectedCategory === 'all') return [];
+    return PRODUCTS.filter((p) => {
+      if (p.category === selectedCategory) return true;
+      if (
+        (selectedCategory === 'travel-essentials' ||
+          selectedCategory === 'chips' ||
+          selectedCategory === 'instant-food') &&
+        (p.category === 'travel-essentials' ||
+          p.id === 'prod-lays' ||
+          p.id === 'prod-kurkure')
+      )
+        return true;
+      if (
+        (selectedCategory === 'drinks' || selectedCategory === 'tea-coffee') &&
+        (p.category === 'drinks' || p.id === 'prod-coke')
+      )
+        return true;
+      if (
+        (selectedCategory === 'sweets' || selectedCategory === 'icecream') &&
+        (p.category === 'sweets' || p.id === 'prod-silk')
+      )
+        return true;
+      if (
+        (selectedCategory === 'paan' || selectedCategory === 'sauces') &&
+        (p.category === 'travel-essentials' || p.category === 'personal-hygiene')
+      )
+        return true;
+      return false;
+    });
+  }, [selectedCategory]);
+
+  const handleCategoryToggle = (catId: string) => {
+    if (selectedCategory === catId) {
+      setSelectedCategory('all');
+    } else {
+      setSelectedCategory(catId);
+    }
+  };
 
   const handleOpenProduct = (product: ProductItem) => {
     setSelectedProduct(product);
@@ -120,10 +197,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     <View style={styles.container}>
       <StatusBar style="dark" />
 
-      {/* FIXED 3-ROW APP HEADER */}
+      {/* FULL SCREEN MANDALA BACKGROUND IMAGE */}
+      <Image
+        source={require('../assets/images/app_mandala_bg.jpg')}
+        style={StyleSheet.absoluteFill}
+        contentFit="cover"
+      />
+
+      {/* FIXED 3-ROW APP HEADER (Features Mandala Background on Upper Part) */}
       <MarketplaceHeader
         selectedCategory={selectedCategory}
-        onSelectCategory={setSelectedCategory}
+        onSelectCategory={handleCategoryToggle}
         onSearchPress={handleSearchPress}
         onProfilePress={handleProfilePress}
         onJourneyDetailsPress={handleJourneyDetailsPress}
@@ -134,12 +218,96 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
       >
         {/* PROMOTIONAL HERO BANNER */}
-        <PromotionalHeroBanner />
+        <PromotionalHeroBanner onPress={handleStationHaltDetails} />
 
         {/* QUICK STATION HALT NOTIFIER PILL */}
         <StationHaltNotifier onDetailsPress={handleStationHaltDetails} />
+
+        {/* RAILQUICK SPOTLIGHT COLORFUL SLIDABLE CARDS */}
+        <RailQuickSpotlightCarousel
+          onProductPress={(id) => {
+            const product = PRODUCTS.find((p) => p.id === id);
+            if (product) handleOpenProduct(product);
+          }}
+        />
+
+        {/* CATEGORY SYSTEM (Snacks & Drinks / Travel Essentials 4x2 Grid) */}
+        <CategoryShowcaseGrid
+          selectedCategory={selectedCategory}
+          onSelectCategory={handleCategoryToggle}
+          onSeeAllPress={() => {
+            setSelectedCategory('all');
+          }}
+        />
+
+        {/* ================= DYNAMIC CATEGORY FILTERED RESULTS (IF CATEGORY SELECTED) ================= */}
+        {!showAll && (
+          <View style={styles.sectionContainer}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionHeaderLeft}>
+                <View style={[styles.sectionIconBox, { backgroundColor: '#E7F8EE' }]}>
+                  <Sparkles size={17} color="#159447" />
+                </View>
+                <View>
+                  <Text style={styles.sectionTitle}>
+                    {CATEGORIES.find((c) => c.id === selectedCategory)?.name ||
+                      selectedCategory.replace(/-/g, ' ').toUpperCase()}
+                  </Text>
+                  <Text style={styles.sectionSubtitle}>
+                    {filteredCategoryProducts.length > 0
+                      ? `${filteredCategoryProducts.length} items available for berth drop`
+                      : 'Express railway essential items for your coach'}
+                  </Text>
+                </View>
+              </View>
+
+              <TouchableOpacity
+                onPress={() => setSelectedCategory('all')}
+                style={styles.showAllPill}
+              >
+                <Text style={styles.showAllPillText}>Show All</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.grid2Container}>
+              <View style={styles.grid2Row}>
+                {(filteredCategoryProducts.length > 0
+                  ? filteredCategoryProducts.slice(0, 2)
+                  : PRODUCTS.slice(0, 2)
+                ).map((prod) => (
+                  <MarketplaceProductCard
+                    key={prod.id}
+                    product={prod}
+                    variant="grid-2"
+                    onPress={handleOpenProduct}
+                  />
+                ))}
+              </View>
+              {(filteredCategoryProducts.length > 2
+                ? filteredCategoryProducts.slice(2, 4)
+                : PRODUCTS.slice(2, 4)
+              ).length > 0 && (
+                <View style={styles.grid2Row}>
+                  {(filteredCategoryProducts.length > 2
+                    ? filteredCategoryProducts.slice(2, 4)
+                    : PRODUCTS.slice(2, 4)
+                  ).map((prod) => (
+                    <MarketplaceProductCard
+                      key={prod.id}
+                      product={prod}
+                      variant="grid-2"
+                      onPress={handleOpenProduct}
+                    />
+                  ))}
+                </View>
+              )}
+            </View>
+          </View>
+        )}
 
         {/* ================= SECTION 1: MOBILE ESSENTIALS ================= */}
         {(showAll || selectedCategory === 'mobile') && (
@@ -178,6 +346,52 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   />
                 ))}
               </View>
+            </View>
+          </View>
+        )}
+
+        {/* ================= SECTION: SNACKS & REFRESHMENTS ================= */}
+        {(showAll ||
+          selectedCategory === 'travel-essentials' ||
+          selectedCategory === 'drinks' ||
+          selectedCategory === 'sweets') && (
+          <View style={styles.sectionContainer}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionHeaderLeft}>
+                <View style={[styles.sectionIconBox, { backgroundColor: '#FEF3C7' }]}>
+                  <Luggage size={17} color="#D97706" />
+                </View>
+                <View>
+                  <Text style={styles.sectionTitle}>Snacks & Refreshments</Text>
+                  <Text style={styles.sectionSubtitle}>Crispy chips, chilled cola & chocolates</Text>
+                </View>
+              </View>
+              <Text style={styles.sectionItemCount}>{snacksProducts.length} Items</Text>
+            </View>
+
+            <View style={styles.grid2Container}>
+              <View style={styles.grid2Row}>
+                {snacksProducts.slice(0, 2).map((prod) => (
+                  <MarketplaceProductCard
+                    key={prod.id}
+                    product={prod}
+                    variant="grid-2"
+                    onPress={handleOpenProduct}
+                  />
+                ))}
+              </View>
+              {snacksProducts.length > 2 && (
+                <View style={styles.grid2Row}>
+                  {snacksProducts.slice(2, 4).map((prod) => (
+                    <MarketplaceProductCard
+                      key={prod.id}
+                      product={prod}
+                      variant="grid-2"
+                      onPress={handleOpenProduct}
+                    />
+                  ))}
+                </View>
+              )}
             </View>
           </View>
         )}
@@ -345,13 +559,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
       {/* PERSISTENT FLOATING CART BAR */}
       <FloatingCartBar
-        bottomOffset={68}
+        bottomOffset={96}
         onPress={onNavigateToCart}
       />
 
-      {/* 5-TAB BOTTOM NAVIGATION */}
+      {/* 5-TAB FLOATING BOTTOM NAVIGATION */}
       <MarketplaceBottomNav
         activeTab={activeTab}
+        hidden={isNavHidden}
         onTabPress={(tab) => {
           setActiveTab(tab);
           if (tab === 'orders') {
@@ -373,10 +588,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F6F8F6',
+    backgroundColor: 'transparent',
   },
   scrollView: {
     flex: 1,
+    backgroundColor: 'transparent',
   },
   scrollContent: {
     paddingBottom: 28,
@@ -433,6 +649,19 @@ const styles = StyleSheet.create({
     color: '#E11D48',
     textTransform: 'uppercase',
   },
+  showAllPill: {
+    backgroundColor: '#E7F8EE',
+    borderWidth: 1,
+    borderColor: '#86EFAC',
+    borderRadius: 12,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+  },
+  showAllPillText: {
+    fontSize: 10.5,
+    fontWeight: '800',
+    color: '#08763A',
+  },
   grid2Container: {
     gap: 10,
   },
@@ -446,7 +675,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   bottomSpacer: {
-    height: 100,
+    height: 170,
   },
 });
 

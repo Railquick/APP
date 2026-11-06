@@ -131,7 +131,7 @@ export const OrderConfirmationScreen: React.FC<OrderConfirmationScreenProps> = (
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#effdf0',
+    backgroundColor: 'transparent',
   },
   scrollView: {
     flex: 1,

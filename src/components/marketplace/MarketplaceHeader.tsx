@@ -7,6 +7,7 @@ import {
   ScrollView,
   Platform,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
@@ -85,34 +86,49 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
     opacity: cursorOpacity.value,
   }));
 
-  const renderCategoryIcon = (id: string, color: string) => {
-    const size = 15;
+  const renderCategoryIcon = (id: string, isActive: boolean) => {
+    const size = 22;
+    const color = isActive ? '#159447' : '#6B7280';
     switch (id) {
       case 'all':
-        return <LayoutGrid size={size} color={color} />;
+        return <LayoutGrid size={size} color={color} strokeWidth={isActive ? 2.2 : 1.6} />;
       case 'mobile':
-        return <Smartphone size={size} color={color} />;
+        return <Smartphone size={size} color={color} strokeWidth={isActive ? 2.2 : 1.6} />;
       case 'women-hygiene':
-        return <Sparkles size={size} color={color} />;
+        return <Sparkles size={size} color={color} strokeWidth={isActive ? 2.2 : 1.6} />;
       case 'personal-hygiene':
-        return <HandMetal size={size} color={color} />;
+        return <HandMetal size={size} color={color} strokeWidth={isActive ? 2.2 : 1.6} />;
       case 'baby':
-        return <Baby size={size} color={color} />;
+        return <Baby size={size} color={color} strokeWidth={isActive ? 2.2 : 1.6} />;
       case 'sleep-comfort':
-        return <Moon size={size} color={color} />;
+        return <Moon size={size} color={color} strokeWidth={isActive ? 2.2 : 1.6} />;
       case 'travel-essentials':
-        return <Luggage size={size} color={color} />;
+        return <Luggage size={size} color={color} strokeWidth={isActive ? 2.2 : 1.6} />;
       case 'first-aid':
-        return <Cross size={size} color={color} />;
+        return <Cross size={size} color={color} strokeWidth={isActive ? 2.2 : 1.6} />;
       case 'travel-accessories':
-        return <Lock size={size} color={color} />;
+        return <Lock size={size} color={color} strokeWidth={isActive ? 2.2 : 1.6} />;
       default:
-        return <LayoutGrid size={size} color={color} />;
+        return <LayoutGrid size={size} color={color} strokeWidth={isActive ? 2.2 : 1.6} />;
     }
   };
 
   return (
     <View style={[styles.headerContainer, { paddingTop: Math.max(insets.top, 12) }]}>
+      {/* UPPER PART BACKGROUND IMAGE (Golden Mandala Pattern) */}
+      <Image
+        source={require('../../assets/images/upper.jpg')}
+        style={StyleSheet.absoluteFill}
+        contentFit="cover"
+      />
+
+      {/* UPPER PART BACKGROUND IMAGE (Golden Mandala Pattern) */}
+      <Image
+        source={require('../../assets/images/upper.jpg')}
+        style={StyleSheet.absoluteFill}
+        contentFit="cover"
+      />
+
       {/* ================= ROW A: BRAND, PNR & JOURNEY DETAILS ================= */}
       {/* Line 1: Logo + Profile icon */}
       <View style={styles.rowALine1}>
@@ -202,46 +218,54 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
         </TouchableOpacity>
       </View>
 
-      {/* ================= ROW C: CATEGORY FILTER PILLS ================= */}
+      {/* ================= ROW C: CATEGORY TAB BAR ================= */}
       <View style={styles.rowC}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.categoryScrollContent}
         >
-          {CATEGORIES.map((cat) => {
+          {CATEGORIES.map((cat, index) => {
             const isSelected = selectedCategory === cat.id;
-            const iconColor = isSelected ? '#FFFFFF' : cat.accentColor;
+            const isNew = cat.id === 'women-hygiene'; // mark one as "New" for freshness
 
             return (
               <TouchableOpacity
                 key={cat.id}
                 activeOpacity={0.75}
                 onPress={() => onSelectCategory(cat.id)}
-                style={[
-                  styles.categoryPill,
-                  isSelected
-                    ? styles.categoryPillActive
-                    : [
-                        styles.categoryPillInactive,
-                        {
-                          backgroundColor: cat.bgColor,
-                          borderColor: cat.borderColor,
-                        },
-                      ],
-                ]}
+                style={styles.categoryTab}
               >
-                {renderCategoryIcon(cat.id, iconColor)}
+                {/* "New" badge on specific categories */}
+                {isNew && !isSelected && (
+                  <View style={styles.newBadge}>
+                    <Text style={styles.newBadgeText}>New</Text>
+                  </View>
+                )}
+
+                {/* Icon Box */}
+                <View
+                  style={[
+                    styles.tabIconBox,
+                    isSelected && styles.tabIconBoxActive,
+                  ]}
+                >
+                  {renderCategoryIcon(cat.id, isSelected)}
+                </View>
+
+                {/* Label */}
                 <Text
                   style={[
-                    styles.categoryPillText,
-                    isSelected
-                      ? styles.categoryPillTextActive
-                      : { color: '#334155' },
+                    styles.tabLabel,
+                    isSelected && styles.tabLabelActive,
                   ]}
+                  numberOfLines={1}
                 >
                   {cat.name}
                 </Text>
+
+                {/* Active underline indicator */}
+                {isSelected && <View style={styles.tabUnderline} />}
               </TouchableOpacity>
             );
           })}
@@ -253,15 +277,16 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
 
 const styles = StyleSheet.create({
   headerContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FAF5EA',
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: '#E9DFC7',
     shadowColor: '#159447',
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.08,
     shadowRadius: 10,
     elevation: 4,
     zIndex: 50,
+    overflow: 'hidden',
   },
   // ---- Row A: 3-line header layout (matches uploaded reference) ----
   rowALine1: {
@@ -410,43 +435,70 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: '#F1F5F9',
-    paddingVertical: 7,
   },
   categoryScrollContent: {
-    paddingHorizontal: 14,
-    gap: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+    gap: 0,
   },
-  categoryPill: {
-    flexDirection: 'row',
+  // ---- New Tab-Bar Style Category Tabs ----
+  categoryTab: {
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1,
+    justifyContent: 'flex-end',
+    paddingHorizontal: 14,
+    paddingTop: 10,
+    paddingBottom: 0,
+    minWidth: 72,
+    position: 'relative',
   },
-  categoryPillActive: {
+  tabIconBox: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 5,
+  },
+  tabIconBoxActive: {
+    backgroundColor: '#E7F8EE',
+  },
+  tabLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#6B7280',
+    letterSpacing: 0.1,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  tabLabelActive: {
+    color: '#159447',
+    fontWeight: '800',
+  },
+  tabUnderline: {
+    position: 'absolute',
+    bottom: 0,
+    left: 10,
+    right: 10,
+    height: 3,
+    borderRadius: 2,
     backgroundColor: '#159447',
-    borderColor: '#159447',
-    shadowColor: '#159447',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 3,
   },
-  categoryPillInactive: {
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 1,
+  newBadge: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    backgroundColor: '#E11D48',
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    zIndex: 10,
   },
-  categoryPillText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  categoryPillTextActive: {
+  newBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
     color: '#FFFFFF',
+    letterSpacing: 0.2,
   },
 });
 
