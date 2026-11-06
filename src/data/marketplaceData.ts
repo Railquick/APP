@@ -5,17 +5,20 @@ export type { ProductItem, CategoryInfo };
 
 export const JOURNEY_DETAILS: JourneyDetails = {
   pnr: '2458-9102-36',
-  trainNumber: '12345',
-  trainName: '12345 • Rajdhani Express',
-  station: 'Kanpur Central',
-  platform: 'PF 2',
+  trainNumber: '12424',
+  trainName: '12424 • DBRT Rajdhani Express',
+  station: 'Hazrat Nizamuddin (NZM)',
+  stationCode: 'NZM',
+  platform: 'PF 1',
   coach: 'B2',
   berth: '36',
   berthType: 'Lower Berth (Window)',
+  passengerName: 'Passenger',
+  passengerPhone: '9876543210',
   deliveryMinutes: 5,
-  haltMinutes: 12,
+  haltMinutes: 5,
   scheduledArrivalMins: 10,
-  haltDurationMins: 12,
+  haltDurationMins: 5,
   statusText: 'CONFIRMED BERTH',
 };
 

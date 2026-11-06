@@ -8,6 +8,7 @@ import { PaymentMethodId } from '../types/payment';
 import CheckoutHeader from '../components/common/CheckoutHeader';
 import StepProgressHeader from '../components/common/StepProgressHeader';
 import TrainSummaryMiniCard from '../components/payment/TrainSummaryMiniCard';
+import PassengerContactCard from '../components/payment/PassengerContactCard';
 import PaymentMethodSelector from '../components/payment/PaymentMethodSelector';
 import BerthDeliverySecurity from '../components/payment/BerthDeliverySecurity';
 import PaymentSummaryCard from '../components/payment/PaymentSummaryCard';
@@ -23,17 +24,42 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({
   onPaymentSuccess,
 }) => {
   const { summary } = useCart();
-  const { journey } = useJourney();
+  const { journey, updatePassenger } = useJourney();
   const { placeOrder, isPlacingOrder } = useOrder();
 
-  const [selectedMethod, setSelectedMethod] = useState<PaymentMethodId>('razorpay');
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethodId>('cod');
   const [isSuccess, setIsSuccess] = useState<boolean>(false);
+  const [passengerName, setPassengerName] = useState<string>(
+    journey.passengerName || 'Passenger'
+  );
+  const [passengerPhone, setPassengerPhone] = useState<string>(
+    journey.passengerPhone || '9876543210'
+  );
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
   const handlePay = async () => {
     if (isPlacingOrder || isSuccess) return;
 
+    setCheckoutError(null);
+    const cleanPhone = passengerPhone.replace(/\D/g, '');
+    if (cleanPhone.length !== 10) {
+      setCheckoutError('Please enter a valid 10-digit mobile number for berth delivery updates.');
+      Alert.alert(
+        'Invalid Mobile Number',
+        'Please enter a valid 10-digit mobile number so the platform runner can reach your berth.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    // Save passenger details in context
+    updatePassenger(passengerName, cleanPhone);
+
     try {
-      await placeOrder(selectedMethod);
+      await placeOrder(selectedMethod, {
+        name: passengerName,
+        phone: cleanPhone,
+      });
       setIsSuccess(true);
 
       // Brief delay to show "Order Placed!" feedback before transitioning
@@ -41,10 +67,16 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({
         onPaymentSuccess();
       }, 750);
     } catch (err: any) {
+      const errorMsg =
+        err?.message ||
+        'Could not process order. Please retry or choose another payment method.';
+      setCheckoutError(errorMsg);
+
+      const isCapacityError = errorMsg.includes('capacity');
       Alert.alert(
-        'Payment Failed',
-        err?.message || 'Could not process transaction. Please select another method.',
-        [{ text: 'Try Again' }]
+        isCapacityError ? 'NZM Hub at Full Capacity' : 'Order Placement Issue',
+        errorMsg,
+        [{ text: 'OK' }]
       );
     }
   };
@@ -74,6 +106,16 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({
             journey={journey}
             totalCount={summary.totalCount}
             totalPayable={summary.totalPayable}
+          />
+
+          {/* Passenger & Station Contact Details */}
+          <PassengerContactCard
+            journey={journey}
+            passengerName={passengerName}
+            passengerPhone={passengerPhone}
+            onNameChange={setPassengerName}
+            onPhoneChange={setPassengerPhone}
+            errorMessage={checkoutError}
           />
 
           {/* Payment Method Selector */}
@@ -130,4 +172,3 @@ const styles = StyleSheet.create({
 });
 
 export default PaymentScreen;
-

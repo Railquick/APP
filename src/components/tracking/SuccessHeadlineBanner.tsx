@@ -1,12 +1,18 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { CheckCircle2 } from 'lucide-react-native';
+import { CheckCircle2, ShieldCheck } from 'lucide-react-native';
 
 interface SuccessHeadlineBannerProps {
   orderId: string;
+  statusBadge?: string;
+  deliveryOtp?: string;
 }
 
-export const SuccessHeadlineBanner: React.FC<SuccessHeadlineBannerProps> = ({ orderId }) => {
+export const SuccessHeadlineBanner: React.FC<SuccessHeadlineBannerProps> = ({
+  orderId,
+  statusBadge = 'Placed - Delivery at Hazrat Nizamuddin',
+  deliveryOtp,
+}) => {
   return (
     <View style={styles.card}>
       <View style={styles.leftGroup}>
@@ -15,15 +21,27 @@ export const SuccessHeadlineBanner: React.FC<SuccessHeadlineBannerProps> = ({ or
         </View>
 
         <View style={styles.textCol}>
-          <Text style={styles.verifiedTag}>ORDER VERIFIED</Text>
+          <View style={styles.badgeRow}>
+            <View style={styles.statusPill}>
+              <ShieldCheck size={11} color="#005226" />
+              <Text style={styles.statusPillText}>{statusBadge}</Text>
+            </View>
+          </View>
           <Text style={styles.headline}>Order Placed Successfully!</Text>
           <Text style={styles.orderIdText}>Order #{orderId}</Text>
         </View>
       </View>
 
-      <View style={styles.liveBadge}>
-        <Text style={styles.liveBadgeText}>INSTANT LIVE</Text>
-      </View>
+      {deliveryOtp ? (
+        <View style={styles.otpPill}>
+          <Text style={styles.otpLabel}>DELIVERY OTP</Text>
+          <Text style={styles.otpValue}>{deliveryOtp}</Text>
+        </View>
+      ) : (
+        <View style={styles.liveBadge}>
+          <Text style={styles.liveBadgeText}>NZM PILOT HUB</Text>
+        </View>
+      )}
     </View>
   );
 };
@@ -65,11 +83,25 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
   },
-  verifiedTag: {
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 3,
+  },
+  statusPill: {
+    backgroundColor: '#88faa0',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 999,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  statusPillText: {
     fontSize: 9.5,
     fontWeight: '800',
-    color: '#88faa0',
-    letterSpacing: 0.5,
+    color: '#005226',
+    letterSpacing: 0.2,
   },
   headline: {
     fontSize: 15.5,
@@ -82,6 +114,30 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     color: '#6cdd86',
     marginTop: 2,
+  },
+  otpPill: {
+    backgroundColor: '#ffe08f',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    borderWidth: 1.5,
+    borderColor: '#ffffff',
+  },
+  otpLabel: {
+    fontSize: 8.5,
+    fontWeight: '800',
+    color: '#503d00',
+    letterSpacing: 0.5,
+  },
+  otpValue: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#241a00',
+    letterSpacing: 1.5,
+    marginTop: 1,
   },
   liveBadge: {
     backgroundColor: '#00873e',
@@ -99,4 +155,3 @@ const styles = StyleSheet.create({
 });
 
 export default SuccessHeadlineBanner;
-
