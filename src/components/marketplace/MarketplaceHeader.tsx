@@ -86,30 +86,30 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
     opacity: cursorOpacity.value,
   }));
 
-  const renderCategoryIcon = (id: string, isActive: boolean) => {
-    const size = 22;
-    const color = isActive ? '#159447' : '#6B7280';
+  const renderCategoryIcon = (id: string, isSelected: boolean, accentColor?: string) => {
+    const size = 16;
+    const color = isSelected ? '#FFFFFF' : (accentColor || '#475569');
     switch (id) {
       case 'all':
-        return <LayoutGrid size={size} color={color} strokeWidth={isActive ? 2.2 : 1.6} />;
+        return <LayoutGrid size={size} color={color} strokeWidth={isSelected ? 2.4 : 1.9} />;
       case 'mobile':
-        return <Smartphone size={size} color={color} strokeWidth={isActive ? 2.2 : 1.6} />;
+        return <Smartphone size={size} color={color} strokeWidth={isSelected ? 2.4 : 1.9} />;
       case 'women-hygiene':
-        return <Sparkles size={size} color={color} strokeWidth={isActive ? 2.2 : 1.6} />;
+        return <Sparkles size={size} color={color} strokeWidth={isSelected ? 2.4 : 1.9} />;
       case 'personal-hygiene':
-        return <HandMetal size={size} color={color} strokeWidth={isActive ? 2.2 : 1.6} />;
+        return <HandMetal size={size} color={color} strokeWidth={isSelected ? 2.4 : 1.9} />;
       case 'baby':
-        return <Baby size={size} color={color} strokeWidth={isActive ? 2.2 : 1.6} />;
+        return <Baby size={size} color={color} strokeWidth={isSelected ? 2.4 : 1.9} />;
       case 'sleep-comfort':
-        return <Moon size={size} color={color} strokeWidth={isActive ? 2.2 : 1.6} />;
+        return <Moon size={size} color={color} strokeWidth={isSelected ? 2.4 : 1.9} />;
       case 'travel-essentials':
-        return <Luggage size={size} color={color} strokeWidth={isActive ? 2.2 : 1.6} />;
+        return <Luggage size={size} color={color} strokeWidth={isSelected ? 2.4 : 1.9} />;
       case 'first-aid':
-        return <Cross size={size} color={color} strokeWidth={isActive ? 2.2 : 1.6} />;
+        return <Cross size={size} color={color} strokeWidth={isSelected ? 2.4 : 1.9} />;
       case 'travel-accessories':
-        return <Lock size={size} color={color} strokeWidth={isActive ? 2.2 : 1.6} />;
+        return <Lock size={size} color={color} strokeWidth={isSelected ? 2.4 : 1.9} />;
       default:
-        return <LayoutGrid size={size} color={color} strokeWidth={isActive ? 2.2 : 1.6} />;
+        return <LayoutGrid size={size} color={color} strokeWidth={isSelected ? 2.4 : 1.9} />;
     }
   };
 
@@ -218,54 +218,64 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
         </TouchableOpacity>
       </View>
 
-      {/* ================= ROW C: CATEGORY TAB BAR ================= */}
+      {/* ================= ROW C: MODERN HORIZONTALLY SCROLLABLE CATEGORY CARDS ================= */}
       <View style={styles.rowC}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.categoryScrollContent}
         >
-          {CATEGORIES.map((cat, index) => {
+          {CATEGORIES.map((cat) => {
             const isSelected = selectedCategory === cat.id;
-            const isNew = cat.id === 'women-hygiene'; // mark one as "New" for freshness
+            const isNew = cat.id === 'women-hygiene';
 
             return (
               <TouchableOpacity
                 key={cat.id}
-                activeOpacity={0.75}
+                activeOpacity={0.8}
                 onPress={() => onSelectCategory(cat.id)}
-                style={styles.categoryTab}
+                style={[
+                  styles.categoryCard,
+                  isSelected
+                    ? styles.categoryCardSelected
+                    : [
+                        styles.categoryCardUnselected,
+                        { borderColor: cat.borderColor || '#E2E8F0' },
+                      ],
+                ]}
               >
-                {/* "New" badge on specific categories */}
-                {isNew && !isSelected && (
-                  <View style={styles.newBadge}>
-                    <Text style={styles.newBadgeText}>New</Text>
-                  </View>
-                )}
+                {/* Category Icon */}
+                {renderCategoryIcon(cat.id, isSelected, cat.accentColor)}
 
-                {/* Icon Box */}
-                <View
-                  style={[
-                    styles.tabIconBox,
-                    isSelected && styles.tabIconBoxActive,
-                  ]}
-                >
-                  {renderCategoryIcon(cat.id, isSelected)}
-                </View>
-
-                {/* Label */}
+                {/* Category Name */}
                 <Text
                   style={[
-                    styles.tabLabel,
-                    isSelected && styles.tabLabelActive,
+                    styles.categoryCardText,
+                    isSelected && styles.categoryCardTextSelected,
                   ]}
                   numberOfLines={1}
                 >
                   {cat.name}
                 </Text>
 
-                {/* Active underline indicator */}
-                {isSelected && <View style={styles.tabUnderline} />}
+                {/* Optional "New" Badge */}
+                {isNew && (
+                  <View
+                    style={[
+                      styles.newBadgeInline,
+                      isSelected && styles.newBadgeInlineSelected,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.newBadgeText,
+                        isSelected && styles.newBadgeTextSelected,
+                      ]}
+                    >
+                      New
+                    </Text>
+                  </View>
+                )}
               </TouchableOpacity>
             );
           })}
@@ -432,73 +442,79 @@ const styles = StyleSheet.create({
     backgroundColor: '#CBD5E1',
   },
   rowC: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#EDF6F0',
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
+    borderTopColor: '#E2EFE7',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2EFE7',
+    paddingVertical: 9,
   },
   categoryScrollContent: {
-    paddingHorizontal: 10,
-    paddingVertical: 2,
-    gap: 0,
-  },
-  // ---- New Tab-Bar Style Category Tabs ----
-  categoryTab: {
+    paddingHorizontal: 12,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingHorizontal: 14,
-    paddingTop: 10,
-    paddingBottom: 0,
-    minWidth: 72,
-    position: 'relative',
+    gap: 8,
   },
-  tabIconBox: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    backgroundColor: '#F3F4F6',
+  // ---- Modern Rounded Horizontal Category Cards (Screenshot 2 Inspiration) ----
+  categoryCard: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 5,
+    height: 42,
+    paddingHorizontal: 15,
+    borderRadius: 14,
+    gap: 7,
   },
-  tabIconBoxActive: {
-    backgroundColor: '#E7F8EE',
+  categoryCardUnselected: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.3,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1.5,
   },
-  tabLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#6B7280',
-    letterSpacing: 0.1,
-    marginBottom: 8,
-    textAlign: 'center',
+  categoryCardSelected: {
+    backgroundColor: '#159447',
+    borderWidth: 1.3,
+    borderColor: '#0F7638',
+    shadowColor: '#159447',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.22,
+    shadowRadius: 5,
+    elevation: 3,
   },
-  tabLabelActive: {
-    color: '#159447',
+  categoryCardText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1E293B',
+    letterSpacing: -0.2,
+  },
+  categoryCardTextSelected: {
+    color: '#FFFFFF',
     fontWeight: '800',
   },
-  tabUnderline: {
-    position: 'absolute',
-    bottom: 0,
-    left: 10,
-    right: 10,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: '#159447',
+  newBadgeInline: {
+    backgroundColor: '#FFF1F2',
+    borderWidth: 1,
+    borderColor: '#FECDD3',
+    borderRadius: 6,
+    paddingHorizontal: 5,
+    paddingVertical: 1.5,
+    marginLeft: 1,
   },
-  newBadge: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    backgroundColor: '#E11D48',
-    borderRadius: 10,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    zIndex: 10,
+  newBadgeInlineSelected: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#FFFFFF',
   },
   newBadgeText: {
     fontSize: 9,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: '#E11D48',
     letterSpacing: 0.2,
+  },
+  newBadgeTextSelected: {
+    color: '#159447',
   },
 });
 

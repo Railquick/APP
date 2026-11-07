@@ -4,6 +4,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { JourneyProvider } from './src/context/JourneyContext';
 import { CartProvider } from './src/context/CartContext';
 import { OrderProvider } from './src/context/OrderContext';
+import { WishlistProvider } from './src/context/WishlistContext';
 import AppNavigator from './src/navigation/AppNavigator';
 
 export default function App() {
@@ -12,7 +13,9 @@ export default function App() {
       <JourneyProvider>
         <CartProvider>
           <OrderProvider>
-            <AppNavigator />
+            <WishlistProvider>
+              <AppNavigator />
+            </WishlistProvider>
           </OrderProvider>
         </CartProvider>
       </JourneyProvider>

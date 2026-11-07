@@ -17,6 +17,7 @@ export interface CartContextType {
   addToCart: (productId: string) => void;
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
+  addItemsToCart: (itemsToAdd: { id: string; quantity: number }[]) => void;
   clearCart: () => void;
   getItemQuantity: (productId: string) => number;
   summary: CartSummary;
@@ -117,6 +118,16 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
+  const addItemsToCart = (itemsToAdd: { id: string; quantity: number }[]) => {
+    setCart((prev) => {
+      const next = { ...prev };
+      itemsToAdd.forEach((item) => {
+        next[item.id] = (next[item.id] || 0) + item.quantity;
+      });
+      return next;
+    });
+  };
+
   const clearCart = () => {
     setCart({});
   };
@@ -156,6 +167,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addToCart,
         removeFromCart,
         updateQuantity,
+        addItemsToCart,
         clearCart,
         getItemQuantity,
         summary,

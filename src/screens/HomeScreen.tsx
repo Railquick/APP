@@ -44,11 +44,15 @@ import MarketplaceBottomNav, {
 interface HomeScreenProps {
   onNavigateToCart?: () => void;
   onNavigateToOrders?: () => void;
+  onNavigateToProfile?: () => void;
+  onNavigateToSearch?: () => void;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
   onNavigateToCart,
   onNavigateToOrders,
+  onNavigateToProfile,
+  onNavigateToSearch,
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedProduct, setSelectedProduct] = useState<ProductItem | null>(null);
@@ -170,11 +174,19 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   };
 
   const handleSearchPress = () => {
-    Alert.alert('Search Products', 'Type to search across 1,000+ railway essential products.');
+    if (onNavigateToSearch) {
+      onNavigateToSearch();
+    } else {
+      Alert.alert('Search Products', 'Type to search across 1,000+ railway essential products.');
+    }
   };
 
   const handleProfilePress = () => {
-    Alert.alert('Passenger Profile', `Active Berth: Coach ${JOURNEY_DETAILS.coach}, Berth ${JOURNEY_DETAILS.berth}\nPNR: ${JOURNEY_DETAILS.pnr}`);
+    if (onNavigateToProfile) {
+      onNavigateToProfile();
+    } else {
+      Alert.alert('Passenger Profile', `Active Berth: Coach ${JOURNEY_DETAILS.coach}, Berth ${JOURNEY_DETAILS.berth}\nPNR: ${JOURNEY_DETAILS.pnr}`);
+    }
   };
 
   const handleJourneyDetailsPress = () => {
@@ -571,6 +583,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           setActiveTab(tab);
           if (tab === 'orders') {
             onNavigateToOrders?.();
+          } else if (tab === 'profile') {
+            onNavigateToProfile?.();
           }
         }}
       />

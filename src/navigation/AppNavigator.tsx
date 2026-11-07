@@ -15,6 +15,9 @@ import StationComingSoonScreen from '../screens/StationComingSoonScreen';
 import HomeScreen from '../screens/HomeScreen';
 import CartScreen from '../screens/CartScreen';
 import PaymentScreen from '../screens/PaymentScreen';
+import OrdersScreen from '../screens/OrdersScreen';
+import ProfileScreen from '../screens/ProfileScreen';
+import SearchScreen from '../screens/SearchScreen';
 import OrderConfirmationScreen from '../screens/OrderConfirmationScreen';
 import { useOrder } from '../context/OrderContext';
 import { PnrDemoRecord, DEMO_PNR_RECORDS } from '../data/pnrDemoData';
@@ -27,8 +30,11 @@ export type ScreenState =
   | 'station_coming_soon'
   | 'transitioning_home'
   | 'home'
+  | 'search'
   | 'cart'
   | 'payment'
+  | 'orders'
+  | 'profile'
   | 'order_confirmation';
 
 export const AppNavigator: React.FC = () => {
@@ -50,11 +56,20 @@ export const AppNavigator: React.FC = () => {
   const homeOpacity = useSharedValue(0);
   const homeTranslateY = useSharedValue(25);
 
+  const searchOpacity = useSharedValue(0);
+  const searchTranslateY = useSharedValue(20);
+
   const cartOpacity = useSharedValue(0);
   const cartTranslateX = useSharedValue(40);
 
   const paymentOpacity = useSharedValue(0);
   const paymentTranslateX = useSharedValue(40);
+
+  const ordersOpacity = useSharedValue(0);
+  const ordersTranslateX = useSharedValue(30);
+
+  const profileOpacity = useSharedValue(0);
+  const profileTranslateX = useSharedValue(30);
 
   const trackingOpacity = useSharedValue(0);
   const trackingTranslateY = useSharedValue(30);
@@ -115,6 +130,12 @@ export const AppNavigator: React.FC = () => {
       setCurrentScreen('home');
       homeOpacity.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.cubic) });
       homeTranslateY.value = withTiming(0, { duration: 300, easing: Easing.out(Easing.cubic) });
+    } else if (target === 'search') {
+      searchOpacity.value = 0;
+      searchTranslateY.value = 20;
+      setCurrentScreen('search');
+      searchOpacity.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.cubic) });
+      searchTranslateY.value = withTiming(0, { duration: 300, easing: Easing.out(Easing.cubic) });
     } else if (target === 'cart') {
       cartOpacity.value = 0;
       cartTranslateX.value = 30;
@@ -127,6 +148,18 @@ export const AppNavigator: React.FC = () => {
       setCurrentScreen('payment');
       paymentOpacity.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.cubic) });
       paymentTranslateX.value = withTiming(0, { duration: 300, easing: Easing.out(Easing.cubic) });
+    } else if (target === 'orders') {
+      ordersOpacity.value = 0;
+      ordersTranslateX.value = 30;
+      setCurrentScreen('orders');
+      ordersOpacity.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.cubic) });
+      ordersTranslateX.value = withTiming(0, { duration: 300, easing: Easing.out(Easing.cubic) });
+    } else if (target === 'profile') {
+      profileOpacity.value = 0;
+      profileTranslateX.value = 30;
+      setCurrentScreen('profile');
+      profileOpacity.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.cubic) });
+      profileTranslateX.value = withTiming(0, { duration: 300, easing: Easing.out(Easing.cubic) });
     } else if (target === 'order_confirmation') {
       trackingOpacity.value = 0;
       trackingTranslateY.value = 25;
@@ -169,6 +202,11 @@ export const AppNavigator: React.FC = () => {
     transform: [{ translateY: homeTranslateY.value }],
   }));
 
+  const searchAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: searchOpacity.value,
+    transform: [{ translateY: searchTranslateY.value }],
+  }));
+
   const cartAnimatedStyle = useAnimatedStyle(() => ({
     opacity: cartOpacity.value,
     transform: [{ translateX: cartTranslateX.value }],
@@ -179,18 +217,39 @@ export const AppNavigator: React.FC = () => {
     transform: [{ translateX: paymentTranslateX.value }],
   }));
 
+  const ordersAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: ordersOpacity.value,
+    transform: [{ translateX: ordersTranslateX.value }],
+  }));
+
+  const profileAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: profileOpacity.value,
+    transform: [{ translateX: profileTranslateX.value }],
+  }));
+
   const trackingAnimatedStyle = useAnimatedStyle(() => ({
     opacity: trackingOpacity.value,
     transform: [{ translateY: trackingTranslateY.value }],
   }));
+
+  const handleSignOut = () => {
+    welcomeOpacity.value = 0;
+    welcomeTranslateY.value = 25;
+    setCurrentScreen('welcome');
+    welcomeOpacity.value = withTiming(1, { duration: 350, easing: Easing.out(Easing.cubic) });
+    welcomeTranslateY.value = withTiming(0, { duration: 350, easing: Easing.out(Easing.cubic) });
+  };
 
   return (
     <View style={styles.container}>
       {/* GLOBAL POST-AUTH MANDALA BACKGROUND (Applied across screens after Google Auth) */}
       {(currentScreen === 'home' ||
         currentScreen === 'transitioning_home' ||
+        currentScreen === 'search' ||
         currentScreen === 'cart' ||
         currentScreen === 'payment' ||
+        currentScreen === 'orders' ||
+        currentScreen === 'profile' ||
         currentScreen === 'order_confirmation') && (
         <Image
           source={require('../assets/images/app_mandala_bg.jpg')}
@@ -199,10 +258,33 @@ export const AppNavigator: React.FC = () => {
         />
       )}
 
+      {/* SCREEN: User Profile */}
+      {currentScreen === 'profile' && (
+        <Animated.View style={[StyleSheet.absoluteFill, profileAnimatedStyle]}>
+          <ProfileScreen
+            onNavigateBack={() => navigateTo('home')}
+            onNavigateToOrders={() => navigateTo('orders')}
+            onNavigateToCart={() => navigateTo('cart')}
+            onSignOut={handleSignOut}
+          />
+        </Animated.View>
+      )}
+
       {/* SCREEN 6: Order Confirmation & Live Tracking */}
       {currentScreen === 'order_confirmation' && (
         <Animated.View style={[StyleSheet.absoluteFill, trackingAnimatedStyle]}>
           <OrderConfirmationScreen onNavigateHome={() => navigateTo('home')} />
+        </Animated.View>
+      )}
+
+      {/* SCREEN: Orders List (Running + Past Orders with Full Details & Reorder) */}
+      {currentScreen === 'orders' && (
+        <Animated.View style={[StyleSheet.absoluteFill, ordersAnimatedStyle]}>
+          <OrdersScreen
+            onNavigateBack={() => navigateTo('home')}
+            onNavigateToCart={() => navigateTo('cart')}
+            onNavigateToTracking={(order) => navigateTo('order_confirmation')}
+          />
         </Animated.View>
       )}
 
@@ -226,18 +308,24 @@ export const AppNavigator: React.FC = () => {
         </Animated.View>
       )}
 
+      {/* SCREEN: Dedicated Search Screen */}
+      {currentScreen === 'search' && (
+        <Animated.View style={[StyleSheet.absoluteFill, searchAnimatedStyle]}>
+          <SearchScreen
+            onNavigateBack={() => navigateTo('home')}
+            onNavigateToCart={() => navigateTo('cart')}
+          />
+        </Animated.View>
+      )}
+
       {/* SCREEN 3: Main Home / Marketplace Screen */}
       {(currentScreen === 'transitioning_home' || currentScreen === 'home') && (
         <Animated.View style={[StyleSheet.absoluteFill, homeAnimatedStyle]}>
           <HomeScreen
             onNavigateToCart={() => navigateTo('cart')}
-            onNavigateToOrders={() => {
-              if (activeOrder) {
-                navigateTo('order_confirmation');
-              } else {
-                navigateTo('cart');
-              }
-            }}
+            onNavigateToOrders={() => navigateTo('orders')}
+            onNavigateToProfile={() => navigateTo('profile')}
+            onNavigateToSearch={() => navigateTo('search')}
           />
         </Animated.View>
       )}
