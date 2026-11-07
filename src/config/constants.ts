@@ -5,16 +5,16 @@
 
 export const SUPPORT_CONFIG = {
   // 24x7 Station Operations & Hub Support
-  PHONE_NUMBER: '+919876543210',
-  PHONE_DISPLAY: '+91 98765 43210',
-  WHATSAPP_NUMBER: '919876543210',
+  PHONE_NUMBER: '+918882779769',
+  PHONE_DISPLAY: '+91 88827 79769',
+  WHATSAPP_NUMBER: '918882779769',
   STATION_CODE: 'NZM',
   STATION_NAME: 'Hazrat Nizamuddin',
   STATION_HUB_TITLE: 'Hazrat Nizamuddin (NZM) Station Ops Hub',
   DEFAULT_WHATSAPP_MESSAGE:
     'Hi RailQuick, I need help with my order at NZM Station',
   OPERATING_HOURS: '24x7 Live Platform & Berth Delivery Ops',
-  SUPPORT_EMAIL: 'ops@railquick.in',
+  SUPPORT_EMAIL: 'support@railquick.in', 
 };
 
 /**
