@@ -4,6 +4,7 @@ import { JOURNEY_DETAILS } from '../data/marketplaceData';
 
 export interface JourneyContextType {
   journey: JourneyDetails;
+  setJourney: (journey: JourneyDetails) => void;
   updateSeat: (coach: string, berth: string, berthType?: string) => void;
   updateStation: (station: string, platform: string, arrivalMins: number, haltMins: number) => void;
   updatePassenger: (passengerName: string, passengerPhone: string) => void;
@@ -47,7 +48,7 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   return (
-    <JourneyContext.Provider value={{ journey, updateSeat, updateStation, updatePassenger }}>
+    <JourneyContext.Provider value={{ journey, setJourney, updateSeat, updateStation, updatePassenger }}>
       {children}
     </JourneyContext.Provider>
   );

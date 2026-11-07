@@ -10,16 +10,21 @@ import Animated, {
 } from 'react-native-reanimated';
 import SplashScreen from '../screens/SplashScreen';
 import WelcomeScreen from '../screens/WelcomeScreen';
+import PnrVerificationScreen from '../screens/PnrVerificationScreen';
+import StationComingSoonScreen from '../screens/StationComingSoonScreen';
 import HomeScreen from '../screens/HomeScreen';
 import CartScreen from '../screens/CartScreen';
 import PaymentScreen from '../screens/PaymentScreen';
 import OrderConfirmationScreen from '../screens/OrderConfirmationScreen';
 import { useOrder } from '../context/OrderContext';
+import { PnrDemoRecord, DEMO_PNR_RECORDS } from '../data/pnrDemoData';
 
 export type ScreenState =
   | 'splash'
   | 'transitioning_welcome'
   | 'welcome'
+  | 'pnr_verification'
+  | 'station_coming_soon'
   | 'transitioning_home'
   | 'home'
   | 'cart'
@@ -28,12 +33,19 @@ export type ScreenState =
 
 export const AppNavigator: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState<ScreenState>('splash');
+  const [activePnrRecord, setActivePnrRecord] = useState<PnrDemoRecord>(DEMO_PNR_RECORDS[0]);
   const { activeOrder } = useOrder();
 
   // Animation values for screen transitions
   const splashOpacity = useSharedValue(1);
   const welcomeOpacity = useSharedValue(0);
   const welcomeTranslateY = useSharedValue(30);
+
+  const pnrOpacity = useSharedValue(0);
+  const pnrTranslateY = useSharedValue(25);
+
+  const comingSoonOpacity = useSharedValue(0);
+  const comingSoonTranslateY = useSharedValue(25);
 
   const homeOpacity = useSharedValue(0);
   const homeTranslateY = useSharedValue(25);
@@ -75,34 +87,35 @@ export const AppNavigator: React.FC = () => {
   };
 
   const handleSignInSuccess = () => {
-    setCurrentScreen('transitioning_home');
-
-    welcomeOpacity.value = withTiming(0, {
-      duration: 450,
-      easing: Easing.in(Easing.cubic),
-    });
-
-    homeTranslateY.value = withTiming(0, {
-      duration: 550,
-      easing: Easing.out(Easing.cubic),
-    });
-
-    homeOpacity.value = withTiming(
-      1,
-      {
-        duration: 550,
-        easing: Easing.out(Easing.cubic),
-      },
-      (finished) => {
-        if (finished) {
-          runOnJS(setCurrentScreen)('home');
-        }
-      }
-    );
+    // Navigate to PNR Verification Screen immediately after Google sign-in
+    welcomeOpacity.value = withTiming(0, { duration: 350 });
+    pnrOpacity.value = 0;
+    pnrTranslateY.value = 25;
+    setCurrentScreen('pnr_verification');
+    pnrOpacity.value = withTiming(1, { duration: 400, easing: Easing.out(Easing.cubic) });
+    pnrTranslateY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
   };
 
   const navigateTo = (target: ScreenState) => {
-    if (target === 'cart') {
+    if (target === 'pnr_verification') {
+      pnrOpacity.value = 0;
+      pnrTranslateY.value = 20;
+      setCurrentScreen('pnr_verification');
+      pnrOpacity.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.cubic) });
+      pnrTranslateY.value = withTiming(0, { duration: 300, easing: Easing.out(Easing.cubic) });
+    } else if (target === 'station_coming_soon') {
+      comingSoonOpacity.value = 0;
+      comingSoonTranslateY.value = 25;
+      setCurrentScreen('station_coming_soon');
+      comingSoonOpacity.value = withTiming(1, { duration: 350, easing: Easing.out(Easing.cubic) });
+      comingSoonTranslateY.value = withTiming(0, { duration: 350, easing: Easing.out(Easing.cubic) });
+    } else if (target === 'home') {
+      homeOpacity.value = 0;
+      homeTranslateY.value = 20;
+      setCurrentScreen('home');
+      homeOpacity.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.cubic) });
+      homeTranslateY.value = withTiming(0, { duration: 300, easing: Easing.out(Easing.cubic) });
+    } else if (target === 'cart') {
       cartOpacity.value = 0;
       cartTranslateX.value = 30;
       setCurrentScreen('cart');
@@ -120,11 +133,6 @@ export const AppNavigator: React.FC = () => {
       setCurrentScreen('order_confirmation');
       trackingOpacity.value = withTiming(1, { duration: 350, easing: Easing.out(Easing.cubic) });
       trackingTranslateY.value = withTiming(0, { duration: 350, easing: Easing.out(Easing.cubic) });
-    } else if (target === 'home') {
-      homeOpacity.value = 0.8;
-      homeTranslateY.value = 0;
-      setCurrentScreen('home');
-      homeOpacity.value = withTiming(1, { duration: 250, easing: Easing.out(Easing.cubic) });
     }
   };
 
@@ -144,6 +152,16 @@ export const AppNavigator: React.FC = () => {
   const welcomeAnimatedStyle = useAnimatedStyle(() => ({
     opacity: welcomeOpacity.value,
     transform: [{ translateY: welcomeTranslateY.value }],
+  }));
+
+  const pnrAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: pnrOpacity.value,
+    transform: [{ translateY: pnrTranslateY.value }],
+  }));
+
+  const comingSoonAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: comingSoonOpacity.value,
+    transform: [{ translateY: comingSoonTranslateY.value }],
   }));
 
   const homeAnimatedStyle = useAnimatedStyle(() => ({
@@ -224,6 +242,30 @@ export const AppNavigator: React.FC = () => {
         </Animated.View>
       )}
 
+      {/* COMING SOON TO YOUR STATION (Non-NZM Stations) */}
+      {currentScreen === 'station_coming_soon' && (
+        <Animated.View style={[StyleSheet.absoluteFill, comingSoonAnimatedStyle]}>
+          <StationComingSoonScreen
+            record={activePnrRecord}
+            onNavigateBack={() => navigateTo('pnr_verification')}
+            onSwitchToNzm={() => navigateTo('home')}
+          />
+        </Animated.View>
+      )}
+
+      {/* PNR VERIFICATION SCREEN (Immediately after Google Auth) */}
+      {currentScreen === 'pnr_verification' && (
+        <Animated.View style={[StyleSheet.absoluteFill, pnrAnimatedStyle]}>
+          <PnrVerificationScreen
+            onContinueToMarketplace={() => navigateTo('home')}
+            onStationComingSoon={(record) => {
+              setActivePnrRecord(record);
+              navigateTo('station_coming_soon');
+            }}
+          />
+        </Animated.View>
+      )}
+
       {/* SCREEN 2: Welcome / Sign-in Onboarding Screen */}
       {(currentScreen === 'transitioning_welcome' ||
         currentScreen === 'welcome' ||
@@ -251,3 +293,4 @@ const styles = StyleSheet.create({
 });
 
 export default AppNavigator;
+
