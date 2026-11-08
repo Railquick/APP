@@ -28,7 +28,8 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({
   const { journey, updatePassenger } = useJourney();
   const { placeOrder, isPlacingOrder } = useOrder();
 
-  const [selectedMethod, setSelectedMethod] = useState<PaymentMethodId>('cod');
+  // NZM Pilot: Default to Razorpay / UPI Online Payment (Pre-paid required)
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethodId>('razorpay');
   const [isSuccess, setIsSuccess] = useState<boolean>(false);
   const [passengerName, setPassengerName] = useState<string>(
     journey.passengerName || 'Passenger'
@@ -41,6 +42,17 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({
 
   const handlePay = async () => {
     if (isPlacingOrder || isSuccess) return;
+
+    // Strict guard against COD submission during NZM pilot phase
+    if (selectedMethod === 'cod') {
+      Alert.alert(
+        'Prepaid Only for NZM Pilot',
+        'Pay at berth is unavailable during the 5-minute halt at Hazrat Nizamuddin. Please use Razorpay / UPI for fast handover.',
+        [{ text: 'OK' }]
+      );
+      setSelectedMethod('razorpay');
+      return;
+    }
 
     setCheckoutError(null);
     const cleanPhone = passengerPhone.replace(/\D/g, '');

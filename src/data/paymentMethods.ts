@@ -3,21 +3,25 @@ import { PaymentMethod } from '../types/payment';
 export const PAYMENT_METHODS: PaymentMethod[] = [
   {
     id: 'razorpay',
-    title: 'Razorpay Instant Checkout',
-    badge: '⚡ Fastest',
+    title: 'Razorpay / UPI Instant Checkout',
+    badge: '⚡ Fastest Handover',
     badgeType: 'fastest',
     description:
-      'Instant UPI (GPay, PhonePe, Paytm), Cards & NetBanking. Instant refund guarantee if train departs early.',
+      'Instant UPI (Google Pay, PhonePe, Paytm), Cards & NetBanking. Instant refund guarantee if train departs early.',
     chips: ['GPay', 'PhonePe', 'Paytm', 'BHIM', 'Cards'],
+    disabled: false,
   },
   {
     id: 'cod',
     title: 'Pay at Berth (COD / Runner QR)',
-    badge: 'Seat Delivery',
-    badgeType: 'seat',
+    badge: 'Unavailable during 5-Min Halt',
+    badgeType: 'disabled',
+    disabled: true,
+    disabledBadge: 'Unavailable during 5-Min Halt',
+    disabledReason:
+      'Cash / QR collection on berth is disabled for the Hazrat Nizamuddin (NZM) pilot. Due to the rapid 5-minute halt window, pre-paid orders guarantee zero-delay berth handover.',
     description:
-      "Hand exact cash or scan the delivery runner's live QR at Berth 36 during Hazrat Nizamuddin (NZM) halt.",
-    chips: ['Cash to Runner', 'Scan on Arrival'],
+      'Prepaid only for NZM station. Cash on berth disabled to guarantee quick handover.',
+    chips: ['Prepaid Only for Fast Berth Handover'],
   },
 ];
-

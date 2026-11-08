@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowRight, Check } from 'lucide-react-native';
+import { ArrowRight, Check, Lock } from 'lucide-react-native';
 import { PaymentMethodId } from '../../types/payment';
 
 interface PaymentFloatingBottomBarProps {
@@ -32,9 +32,13 @@ export const PaymentFloatingBottomBar: React.FC<PaymentFloatingBottomBarProps> =
   onPayPress,
 }) => {
   const insets = useSafeAreaInsets();
+  const isOnlinePayment = selectedMethod === 'razorpay';
 
-  const buttonLabel =
-    selectedMethod === 'razorpay' ? 'Pay & Place Order' : 'Confirm Berth Order';
+  const buttonLabel = isOnlinePayment
+    ? `Pay ₹${totalPayable} & Place Order`
+    : 'Select Online Payment';
+
+  const isButtonDisabled = isProcessing || isSuccess || !isOnlinePayment;
 
   return (
     <View style={[styles.wrapper, { paddingBottom: Math.max(insets.bottom, 12) }]}>
@@ -56,9 +60,10 @@ export const PaymentFloatingBottomBar: React.FC<PaymentFloatingBottomBarProps> =
             styles.actionButton,
             isProcessing && styles.buttonProcessing,
             isSuccess && styles.buttonSuccess,
+            isButtonDisabled && !isProcessing && !isSuccess && styles.buttonDisabled,
           ]}
           activeOpacity={0.88}
-          disabled={isProcessing || isSuccess}
+          disabled={isButtonDisabled}
           onPress={onPayPress}
         >
           {isProcessing ? (
@@ -73,6 +78,9 @@ export const PaymentFloatingBottomBar: React.FC<PaymentFloatingBottomBarProps> =
             </View>
           ) : (
             <View style={styles.buttonInner}>
+              {isOnlinePayment ? (
+                <Lock size={15} color="#FFFFFF" />
+              ) : null}
               <Text style={styles.buttonText}>{buttonLabel}</Text>
               <ArrowRight size={18} color="#FFFFFF" strokeWidth={2.6} />
             </View>
@@ -134,7 +142,7 @@ const styles = StyleSheet.create({
   actionButton: {
     backgroundColor: '#006b2f',
     borderRadius: 10,
-    paddingHorizontal: 18,
+    paddingHorizontal: 16,
     height: 48,
     alignItems: 'center',
     justifyContent: 'center',
@@ -143,7 +151,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 6,
     elevation: 3,
-    minWidth: 170,
+    minWidth: 180,
+  },
+  buttonDisabled: {
+    backgroundColor: '#8a9c8f',
+    shadowOpacity: 0,
+    elevation: 0,
   },
   buttonProcessing: {
     backgroundColor: '#00873e',
@@ -166,4 +179,3 @@ const styles = StyleSheet.create({
 });
 
 export default PaymentFloatingBottomBar;
-

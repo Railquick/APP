@@ -6,9 +6,12 @@ export interface PaymentMethod {
   id: PaymentMethodId;
   title: string;
   badge?: string;
-  badgeType?: 'fastest' | 'seat';
+  badgeType?: 'fastest' | 'seat' | 'disabled';
   description: string;
   chips: string[];
+  disabled?: boolean;
+  disabledBadge?: string;
+  disabledReason?: string;
 }
 
 export interface PaymentTransaction {
@@ -20,4 +23,3 @@ export interface PaymentTransaction {
   status: PaymentStatus;
   timestamp: string;
 }
-
