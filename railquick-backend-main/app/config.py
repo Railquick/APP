@@ -1,4 +1,5 @@
 import os
+import sys
 from dotenv import load_dotenv
 from supabase import create_client, Client
 
@@ -19,23 +20,32 @@ RAILWAY_API_KEY: str = os.getenv("RAILWAY_API_KEY", "")
 RAILWAY_API_HOST: str = os.getenv("RAILWAY_API_HOST", "irctc1.p.rapidapi.com")
 
 # PhonePe Standard Checkout Configuration
-PHONEPE_MERCHANT_ID: str = os.getenv("PHONEPE_MERCHANT_ID", "PGTESTPAYUAT")
+PHONEPE_MERCHANT_ID: str = os.getenv("PHONEPE_MERCHANT_ID", "PGTESTPAYUAT").strip()
 PHONEPE_SALT_KEY: str = os.getenv(
     "PHONEPE_SALT_KEY", "099eb0cd-02cf-4e2a-8aca-3e6c6aff0399"
-)
-PHONEPE_SALT_INDEX: str = os.getenv("PHONEPE_SALT_INDEX", "1")
-PHONEPE_ENV: str = os.getenv("PHONEPE_ENV", "PROD").upper()
+).strip()
+PHONEPE_SALT_INDEX: str = os.getenv("PHONEPE_SALT_INDEX", "1").strip()
+PHONEPE_ENV: str = os.getenv("PHONEPE_ENV", "PROD").strip().upper()
 
+# Standard PhonePe Base URLs
+PHONEPE_PROD_BASE_URL: str = "https://api.phonepe.com/apis/hermes"
+PHONEPE_UAT_BASE_URL: str = "https://api-preprod.phonepe.com/apis/pg-sandbox"
+PHONEPE_ALT_SANDBOX_BASE_URL: str = "https://api.phonepe.com/apis/pg-sandbox"
+
+# In PROD, PhonePe base URL is strictly https://api.phonepe.com/apis/hermes
 if PHONEPE_ENV == "PROD":
     PHONEPE_BASE_URL: str = os.getenv(
-        "PHONEPE_BASE_URL", "https://api.phonepe.com/apis/hermes"
-    )
+        "PHONEPE_BASE_URL", PHONEPE_PROD_BASE_URL
+    ).strip().rstrip("/")
 else:
     PHONEPE_BASE_URL: str = os.getenv(
-        "PHONEPE_BASE_URL", "https://api-preprod.phonepe.com/apis/pg-sandbox"
-    )
+        "PHONEPE_BASE_URL", PHONEPE_UAT_BASE_URL
+    ).strip().rstrip("/")
 
 PHONEPE_CALLBACK_URL: str = os.getenv(
     "PHONEPE_CALLBACK_URL",
     "https://railquick-backend.onrender.com/api/v1/payments/phonepe-callback",
-)
+).strip()
+
+# Module-level settings alias
+settings = sys.modules[__name__]

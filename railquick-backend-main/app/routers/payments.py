@@ -4,18 +4,22 @@ import json
 import logging
 import re
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 import httpx
 from pydantic import BaseModel, Field
 
+from app import config as settings
 from app.config import (
+    PHONEPE_ALT_SANDBOX_BASE_URL,
     PHONEPE_BASE_URL,
     PHONEPE_CALLBACK_URL,
     PHONEPE_ENV,
     PHONEPE_MERCHANT_ID,
+    PHONEPE_PROD_BASE_URL,
     PHONEPE_SALT_INDEX,
     PHONEPE_SALT_KEY,
+    PHONEPE_UAT_BASE_URL,
     supabase,
 )
 from app.utils.auth_utils import get_current_user
@@ -41,15 +45,43 @@ class InitiatePhonePeResponse(BaseModel):
     data: Optional[Dict[str, Any]] = None
 
 
-def calculate_phonepe_checksum(path_or_endpoint: str, base64_payload: str = "") -> str:
+def normalize_salt_key(key: str) -> str:
+    """
+    Ensure the salt key is in plain-text format.
+    If the key is base64-encoded UUID, decodes it to standard 36-char UUID.
+    """
+    cleaned = key.strip()
+    if "-" not in cleaned and len(cleaned) in (44, 48):
+        try:
+            decoded = base64.b64decode(cleaned).decode("utf-8")
+            if re.match(
+                r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                decoded,
+            ):
+                return decoded
+        except Exception:
+            pass
+    return cleaned
+
+
+def calculate_phonepe_checksum(
+    path_or_endpoint: str,
+    base64_payload: str = "",
+    salt_key: Optional[str] = None,
+    salt_index: Optional[str] = None,
+) -> str:
     """
     Calculate the standard SHA256 checksum required by PhonePe.
     Format: SHA256(base64_payload + endpoint + salt_key) + "###" + salt_index
     For callbacks: SHA256(base64_response + salt_key) + "###" + salt_index
+    For status: SHA256(status_path + salt_key) + "###" + salt_index
     """
-    raw_str = f"{base64_payload}{path_or_endpoint}{PHONEPE_SALT_KEY}"
+    key = normalize_salt_key(salt_key or settings.PHONEPE_SALT_KEY)
+    index = (salt_index or settings.PHONEPE_SALT_INDEX).strip()
+    endpoint = path_or_endpoint.strip() if path_or_endpoint else ""
+    raw_str = f"{base64_payload}{endpoint}{key}"
     hashed = hashlib.sha256(raw_str.encode("utf-8")).hexdigest()
-    return f"{hashed}###{PHONEPE_SALT_INDEX}"
+    return f"{hashed}###{index}"
 
 
 def parse_order_id_from_txn(merchant_transaction_id: str) -> str:
@@ -111,10 +143,11 @@ async def initiate_phonepe_payment(
     base64_payload = base64.b64encode(payload_json.encode("utf-8")).decode("utf-8")
 
     # 5. Compute X-VERIFY checksum: SHA256(base64_payload + "/pg/v1/pay" + salt_key) + "###" + salt_index
-    x_verify = calculate_phonepe_checksum("/pg/v1/pay", base64_payload)
+    endpoint_path = "/pg/v1/pay"
+    x_verify = calculate_phonepe_checksum(endpoint_path, base64_payload)
 
     # 6. Make async HTTP POST to PhonePe API
-    request_url = f"{PHONEPE_BASE_URL}/pg/v1/pay"
+    request_url = f"{settings.PHONEPE_BASE_URL.rstrip('/')}/pg/v1/pay"
     headers = {
         "Content-Type": "application/json",
         "X-VERIFY": x_verify,
@@ -123,22 +156,59 @@ async def initiate_phonepe_payment(
     body = {"request": base64_payload}
 
     logger.info(
-        "Initiating PhonePe payment for order %s (txn: %s, amount: %d paise, env: %s)",
-        payload.order_id,
-        merchant_transaction_id,
-        amount_in_paise,
-        PHONEPE_ENV,
+        "Calling PhonePe initiate: Target URL=%s | Headers=%s",
+        request_url,
+        headers,
     )
+
+    fallback_candidates: List[str] = [
+        f"{settings.PHONEPE_ALT_SANDBOX_BASE_URL.rstrip('/')}/pg/v1/pay",
+        f"{settings.PHONEPE_UAT_BASE_URL.rstrip('/')}/pg/v1/pay",
+        f"{settings.PHONEPE_PROD_BASE_URL.rstrip('/')}/pg/v1/pay",
+    ]
 
     async with httpx.AsyncClient(timeout=15.0) as http_client:
         try:
             response = await http_client.post(request_url, json=body, headers=headers)
         except Exception as exc:
-            logger.error("Network error connecting to PhonePe API: %s", exc)
+            logger.error("Network error connecting to PhonePe API (%s): %s", request_url, exc)
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
                 detail=f"Unable to connect to PhonePe gateway: {str(exc)}",
             )
+
+        # 404 Fallback: if PhonePe Hermes returns 404, check fallback endpoints
+        if response.status_code == 404:
+            logger.warning(
+                "PhonePe initiate returned status 404 from %s: %s. Attempting fallback endpoints...",
+                request_url,
+                response.text,
+            )
+            for fb_target in fallback_candidates:
+                if fb_target == request_url:
+                    continue
+                logger.info(
+                    "Calling PhonePe fallback: Target URL=%s | Headers=%s",
+                    fb_target,
+                    headers,
+                )
+                try:
+                    fb_response = await http_client.post(fb_target, json=body, headers=headers)
+                    logger.info(
+                        "PhonePe fallback (%s) returned status %d: %s",
+                        fb_target,
+                        fb_response.status_code,
+                        fb_response.text,
+                    )
+                    if fb_response.status_code == 200:
+                        logger.info("PhonePe fallback succeeded using %s", fb_target)
+                        response = fb_response
+                        break
+                    elif fb_response.status_code != 404:
+                        response = fb_response
+                        break
+                except Exception as fb_exc:
+                    logger.error("Error during fallback request to %s: %s", fb_target, fb_exc)
 
     if response.status_code != 200:
         logger.error(
@@ -308,7 +378,7 @@ async def check_phonepe_payment_status(
     status_path = f"/pg/v1/status/{PHONEPE_MERCHANT_ID}/{merchant_transaction_id}"
     x_verify = calculate_phonepe_checksum(status_path, "")
 
-    request_url = f"{PHONEPE_BASE_URL}{status_path}"
+    request_url = f"{settings.PHONEPE_BASE_URL.rstrip('/')}{status_path}"
     headers = {
         "Content-Type": "application/json",
         "X-VERIFY": x_verify,
@@ -316,16 +386,54 @@ async def check_phonepe_payment_status(
         "Accept": "application/json",
     }
 
+    logger.info(
+        "Calling PhonePe status check: Target URL=%s | Headers=%s",
+        request_url,
+        headers,
+    )
+
+    status_fallback_candidates: List[str] = [
+        f"{settings.PHONEPE_ALT_SANDBOX_BASE_URL.rstrip('/')}{status_path}",
+        f"{settings.PHONEPE_UAT_BASE_URL.rstrip('/')}{status_path}",
+        f"{settings.PHONEPE_PROD_BASE_URL.rstrip('/')}{status_path}",
+    ]
+
     async with httpx.AsyncClient(timeout=10.0) as http_client:
         try:
             response = await http_client.get(request_url, headers=headers)
-            resp_json = response.json()
         except Exception as exc:
-            logger.error("Error checking PhonePe status: %s", exc)
+            logger.error("Error checking PhonePe status (%s): %s", request_url, exc)
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
                 detail=f"Error querying PhonePe status: {str(exc)}",
             )
+
+        if response.status_code == 404:
+            logger.warning(
+                "PhonePe status check returned 404 from %s: %s. Attempting fallback endpoints...",
+                request_url,
+                response.text,
+            )
+            for fb_target in status_fallback_candidates:
+                if fb_target == request_url:
+                    continue
+                logger.info(
+                    "Calling PhonePe status fallback: Target URL=%s | Headers=%s",
+                    fb_target,
+                    headers,
+                )
+                try:
+                    fb_response = await http_client.get(fb_target, headers=headers)
+                    if fb_response.status_code == 200 or fb_response.status_code != 404:
+                        response = fb_response
+                        break
+                except Exception as fb_exc:
+                    logger.error("Error during status fallback to %s: %s", fb_target, fb_exc)
+
+        try:
+            resp_json = response.json()
+        except Exception:
+            resp_json = {"code": "ERROR", "message": response.text}
 
     # If completed, sync to Supabase order
     if resp_json.get("code") == "PAYMENT_SUCCESS":
