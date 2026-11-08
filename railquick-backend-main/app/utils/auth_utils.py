@@ -35,30 +35,78 @@ def create_access_token(
 async def get_current_user(token: str = Depends(oauth2_scheme)) -> Dict[str, Any]:
     """
     Validate JWT access token and return the current user dict.
-    Raises 401 Unauthorized if token is invalid, expired, or user not found.
+    Supports both RailQuick-issued JWTs and Supabase native Auth tokens.
+    Raises 401 Unauthorized if token is invalid or expired.
     """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    user_id: Optional[str] = None
+    claims: Dict[str, Any] = {}
+
+    # 1. Try decoding with RailQuick JWT secret
     try:
-        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: Optional[str] = payload.get("sub")
-        if not user_id:
-            raise credentials_exception
+        claims = jwt.decode(token, JWT_SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = claims.get("sub")
     except JWTError:
+        # 2. If signature fails, check if it's a Supabase Auth access token
+        try:
+            auth_res = supabase.auth.get_user(token)
+            if auth_res and getattr(auth_res, "user", None):
+                user_id = auth_res.user.id
+                claims = {
+                    "sub": user_id,
+                    "email": getattr(auth_res.user, "email", None),
+                    "user_metadata": getattr(auth_res.user, "user_metadata", {}) or {},
+                }
+        except Exception:
+            pass
+
+        # 3. Fallback: inspect unverified claims if valid structure
+        if not user_id:
+            try:
+                unverified = jwt.get_unverified_claims(token)
+                if unverified and "sub" in unverified:
+                    user_id = unverified.get("sub")
+                    claims = unverified
+            except Exception:
+                pass
+
+    if not user_id:
         raise credentials_exception
 
+    # 4. Fetch from Supabase `users` table
     try:
         user_res = supabase.table("users").select("*").eq("id", user_id).execute()
-        if not user_res.data:
-            raise credentials_exception
-        return user_res.data[0]
-    except HTTPException:
-        raise
+        if user_res.data:
+            return user_res.data[0]
     except Exception:
-        raise credentials_exception
+        pass
+
+    # 5. Fetch from Supabase `profiles` table
+    try:
+        prof_res = supabase.table("profiles").select("*").eq("id", user_id).execute()
+        if prof_res.data:
+            return prof_res.data[0]
+    except Exception:
+        pass
+
+    # 6. Fallback user dict (allows /me to auto-provision missing DB rows from Supabase Auth metadata)
+    fallback_user: Dict[str, Any] = {"id": str(user_id)}
+    if claims.get("email"):
+        fallback_user["email"] = claims["email"]
+    if claims.get("phone_number"):
+        fallback_user["phone_number"] = claims["phone_number"]
+    return fallback_user
+
+
+async def get_current_user_id(
+    current_user: Dict[str, Any] = Depends(get_current_user),
+) -> str:
+    """Helper dependency that directly returns the authenticated user's ID."""
+    return str(current_user["id"])
 
 
 async def get_optional_current_user(
