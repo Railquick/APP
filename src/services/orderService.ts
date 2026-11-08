@@ -48,7 +48,12 @@ class OrderService {
     const trainNo = journey.trainNumber || '12424';
     const coach = journey.coach || 'B2';
     const seatNo = journey.berth || '36';
-    const paymentMethod = payment.method === 'cod' ? 'PAY_ON_DELIVERY' : 'UPI_RAZORPAY';
+    const paymentMethod =
+      payment.method === 'cod'
+        ? 'PAY_ON_DELIVERY'
+        : payment.method === 'phonepe'
+        ? 'PHONEPE'
+        : 'UPI_RAZORPAY';
 
     const fastApiPayload = {
       train_no: trainNo,

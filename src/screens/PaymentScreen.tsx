@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, Alert, Linking } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useCart } from '../context/CartContext';
 import { useJourney } from '../context/JourneyContext';
 import { useOrder } from '../context/OrderContext';
 import { PaymentMethodId } from '../types/payment';
+import { paymentService } from '../services/paymentService';
 import CheckoutHeader from '../components/common/CheckoutHeader';
 import StepProgressHeader from '../components/common/StepProgressHeader';
 import TrainSummaryMiniCard from '../components/payment/TrainSummaryMiniCard';
@@ -28,9 +29,10 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({
   const { journey, updatePassenger } = useJourney();
   const { placeOrder, isPlacingOrder } = useOrder();
 
-  // NZM Pilot: Default to Razorpay / UPI Online Payment (Pre-paid required)
-  const [selectedMethod, setSelectedMethod] = useState<PaymentMethodId>('razorpay');
+  // NZM Pilot: Default to PhonePe / UPI Online Payment (Pre-paid required)
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethodId>('phonepe');
   const [isSuccess, setIsSuccess] = useState<boolean>(false);
+  const [isRedirecting, setIsRedirecting] = useState<boolean>(false);
   const [passengerName, setPassengerName] = useState<string>(
     journey.passengerName || 'Passenger'
   );
@@ -41,16 +43,16 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({
   const [supportModalVisible, setSupportModalVisible] = useState(false);
 
   const handlePay = async () => {
-    if (isPlacingOrder || isSuccess) return;
+    if (isPlacingOrder || isSuccess || isRedirecting) return;
 
     // Strict guard against COD submission during NZM pilot phase
     if (selectedMethod === 'cod') {
       Alert.alert(
         'Prepaid Only for NZM Pilot',
-        'Pay at berth is unavailable during the 5-minute halt at Hazrat Nizamuddin. Please use Razorpay / UPI for fast handover.',
+        'Pay at berth is unavailable during the 5-minute halt at Hazrat Nizamuddin. Please use PhonePe / UPI for fast handover.',
         [{ text: 'OK' }]
       );
-      setSelectedMethod('razorpay');
+      setSelectedMethod('phonepe');
       return;
     }
 
@@ -70,17 +72,47 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({
     updatePassenger(passengerName, cleanPhone);
 
     try {
-      await placeOrder(selectedMethod, {
+      // 1. Create and persist order record first
+      const newOrder = await placeOrder(selectedMethod, {
         name: passengerName,
         phone: cleanPhone,
       });
-      setIsSuccess(true);
 
-      // Brief delay to show "Order Placed!" feedback before transitioning
+      // 2. Initiate PhonePe payment session
+      setIsRedirecting(true);
+      try {
+        const paymentUrl = await paymentService.initiatePhonePePayment(
+          newOrder.orderId,
+          summary.totalPayable
+        );
+
+        if (paymentUrl) {
+          // 3. Redirect user to PhonePe standard gateway
+          if (typeof window !== 'undefined') {
+            window.location.href = paymentUrl;
+          } else {
+            await Linking.openURL(paymentUrl);
+          }
+          return;
+        }
+      } catch (gatewayErr: any) {
+        console.warn('PhonePe gateway redirect error:', gatewayErr);
+        setIsRedirecting(false);
+        const errorMsg =
+          gatewayErr?.message ||
+          'Unable to connect to PhonePe gateway. Please retry or contact support.';
+        setCheckoutError(errorMsg);
+        Alert.alert('Payment Gateway Issue', errorMsg, [{ text: 'OK' }]);
+        return;
+      }
+
+      setIsSuccess(true);
+      // Brief delay for feedback if redirect was skipped
       setTimeout(() => {
         onPaymentSuccess();
       }, 750);
     } catch (err: any) {
+      setIsRedirecting(false);
       const errorMsg =
         err?.message ||
         'Could not process order. Please retry or choose another payment method.';
@@ -159,6 +191,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({
         selectedMethod={selectedMethod}
         isProcessing={isPlacingOrder}
         isSuccess={isSuccess}
+        isRedirecting={isRedirecting}
         onPayPress={handlePay}
       />
 

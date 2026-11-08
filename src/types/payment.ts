@@ -1,4 +1,4 @@
-export type PaymentMethodId = 'razorpay' | 'cod';
+export type PaymentMethodId = 'phonepe' | 'razorpay' | 'cod';
 
 export type PaymentStatus = 'idle' | 'processing' | 'success' | 'failed';
 

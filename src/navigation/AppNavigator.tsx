@@ -132,6 +132,13 @@ export const AppNavigator: React.FC = () => {
     if (typeof window !== 'undefined') {
       try {
         const searchParams = new URLSearchParams(window.location.search);
+        const orderIdParam = searchParams.get('order_id');
+        if (orderIdParam) {
+          // Returning from PhonePe gateway redirect
+          setCurrentScreen('order_confirmation');
+          return;
+        }
+
         const token = searchParams.get('token');
         if (token) {
           hasReturnedFromOAuth = true;

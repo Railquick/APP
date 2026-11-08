@@ -23,7 +23,7 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
     if (isDisabled) {
       Alert.alert(
         'Prepaid Only for NZM Station',
-        `Cash & QR collection at berth is unavailable during the short 5-minute halt at ${station || 'Hazrat Nizamuddin'}. Pre-paid UPI/Razorpay ensures your runner delivers directly to Coach ${coach}, Berth ${berth} with zero delay.`,
+        `Cash & QR collection at berth is unavailable during the short 5-minute halt at ${station || 'Hazrat Nizamuddin'}. Pre-paid PhonePe / UPI ensures your runner delivers directly to Coach ${coach}, Berth ${berth} with zero delay.`,
         [{ text: 'Got it' }]
       );
       return;

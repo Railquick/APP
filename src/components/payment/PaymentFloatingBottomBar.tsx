@@ -18,6 +18,7 @@ interface PaymentFloatingBottomBarProps {
   selectedMethod: PaymentMethodId;
   isProcessing: boolean;
   isSuccess: boolean;
+  isRedirecting?: boolean;
   onPayPress: () => void;
 }
 
@@ -29,16 +30,19 @@ export const PaymentFloatingBottomBar: React.FC<PaymentFloatingBottomBarProps> =
   selectedMethod,
   isProcessing,
   isSuccess,
+  isRedirecting = false,
   onPayPress,
 }) => {
   const insets = useSafeAreaInsets();
-  const isOnlinePayment = selectedMethod === 'razorpay';
+  const isOnlinePayment =
+    selectedMethod === 'phonepe' || selectedMethod === 'razorpay';
 
   const buttonLabel = isOnlinePayment
     ? `Pay ₹${totalPayable} & Place Order`
     : 'Select Online Payment';
 
-  const isButtonDisabled = isProcessing || isSuccess || !isOnlinePayment;
+  const isButtonDisabled =
+    isProcessing || isSuccess || isRedirecting || !isOnlinePayment;
 
   return (
     <View style={[styles.wrapper, { paddingBottom: Math.max(insets.bottom, 12) }]}>
@@ -58,15 +62,24 @@ export const PaymentFloatingBottomBar: React.FC<PaymentFloatingBottomBarProps> =
         <TouchableOpacity
           style={[
             styles.actionButton,
-            isProcessing && styles.buttonProcessing,
+            (isProcessing || isRedirecting) && styles.buttonProcessing,
             isSuccess && styles.buttonSuccess,
-            isButtonDisabled && !isProcessing && !isSuccess && styles.buttonDisabled,
+            isButtonDisabled &&
+              !isProcessing &&
+              !isSuccess &&
+              !isRedirecting &&
+              styles.buttonDisabled,
           ]}
           activeOpacity={0.88}
           disabled={isButtonDisabled}
           onPress={onPayPress}
         >
-          {isProcessing ? (
+          {isRedirecting ? (
+            <View style={styles.buttonInner}>
+              <ActivityIndicator size="small" color="#FFFFFF" />
+              <Text style={styles.buttonText}>Opening PhonePe...</Text>
+            </View>
+          ) : isProcessing ? (
             <View style={styles.buttonInner}>
               <ActivityIndicator size="small" color="#FFFFFF" />
               <Text style={styles.buttonText}>Connecting Runner...</Text>

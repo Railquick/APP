@@ -2,13 +2,13 @@ import { PaymentMethod } from '../types/payment';
 
 export const PAYMENT_METHODS: PaymentMethod[] = [
   {
-    id: 'razorpay',
-    title: 'Razorpay / UPI Instant Checkout',
-    badge: '⚡ Fastest Handover',
+    id: 'phonepe',
+    title: 'PhonePe / UPI / Cards',
+    badge: '⚡ Instant & Safe',
     badgeType: 'fastest',
     description:
-      'Instant UPI (Google Pay, PhonePe, Paytm), Cards & NetBanking. Instant refund guarantee if train departs early.',
-    chips: ['GPay', 'PhonePe', 'Paytm', 'BHIM', 'Cards'],
+      'Pay securely via PhonePe, Google Pay, Paytm, UPI Apps, Credit/Debit Cards, or NetBanking with instant berth delivery confirmation.',
+    chips: ['PhonePe', 'GPay', 'Paytm', 'UPI', 'Cards'],
     disabled: false,
   },
   {
