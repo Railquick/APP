@@ -20,6 +20,7 @@ import { useCart } from '../../context/CartContext';
 
 interface SpotlightItem {
   id: string;
+  bgImage: any;
   gradientColors: [string, string, ...string[]];
   pillTag: string;
   pillIcon: 'zap' | 'moon' | 'sparkles' | 'lock';
@@ -34,6 +35,7 @@ interface SpotlightItem {
 const SPOTLIGHT_ITEMS: SpotlightItem[] = [
   {
     id: 'prod-spotlight-gan',
+    bgImage: require('../../../cards/red.png'),
     gradientColors: ['#F43F5E', '#E11D48', '#BE123C'],
     pillTag: '65W GAN POWER • 5 MIN DROP',
     pillIcon: 'zap',
@@ -47,6 +49,7 @@ const SPOTLIGHT_ITEMS: SpotlightItem[] = [
   },
   {
     id: 'prod-spotlight-sleep',
+    bgImage: require('../../../cards/purple.png'),
     gradientColors: ['#818CF8', '#6366F1', '#4338CA'],
     pillTag: 'SLEEP CARE • ZERO LIGHT',
     pillIcon: 'moon',
@@ -60,6 +63,7 @@ const SPOTLIGHT_ITEMS: SpotlightItem[] = [
   },
   {
     id: 'prod-spotlight-hygiene',
+    bgImage: require('../../../cards/green.png'),
     gradientColors: ['#14B8A6', '#0D9488', '#115E59'],
     pillTag: 'WASHROOM HYGIENE • FLUSHABLE',
     pillIcon: 'sparkles',
@@ -73,6 +77,7 @@ const SPOTLIGHT_ITEMS: SpotlightItem[] = [
   },
   {
     id: 'prod-spotlight-lock',
+    bgImage: require('../../../cards/orange.png'),
     gradientColors: ['#FB923C', '#EA580C', '#9A3412'],
     pillTag: 'BERTH SECURITY • HEAVY DUTY',
     pillIcon: 'lock',
@@ -142,98 +147,108 @@ export const RailQuickSpotlightCarousel: React.FC<
               onPress={() => onProductPress?.(item.id)}
               style={styles.cardContainer}
             >
-              <LinearGradient
-                colors={item.gradientColors}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.cardGradient}
-              >
-                {/* Top Category / Benefit Pill */}
-                <View style={styles.pillContainer}>
-                  <View style={styles.pillTag}>
-                    {renderPillIcon(item.pillIcon)}
-                    <Text style={styles.pillText}>{item.pillTag}</Text>
-                  </View>
-                </View>
+              <View style={styles.cardInner}>
+                {/* Background image from cards folder */}
+                <Image
+                  source={item.bgImage}
+                  style={StyleSheet.absoluteFill}
+                  contentFit="cover"
+                />
 
-                {/* Card Title & Subtitle */}
-                <Text style={styles.cardTitle}>{item.title}</Text>
-                <Text style={styles.cardSubtitle}>{item.description}</Text>
+                {/* Subtle protective gradient overlay for crystal clear text readability */}
+                <LinearGradient
+                  colors={['rgba(0,0,0,0.05)', 'rgba(0,0,0,0.32)']}
+                  style={StyleSheet.absoluteFill}
+                />
 
-                {/* Bottom Row: RailQuick Logo Box, Price Breakdown, and ADD Button */}
-                <View style={styles.bottomRow}>
-                  {/* Left: RailQuick Logo Box & Price */}
-                  <View style={styles.productInfoLeft}>
-                    {/* RailQuick Logo image inside white card instead of symbol */}
-                    <View style={styles.iconBox}>
-                      <Image
-                        source={require('../../assets/images/railquick_logo.png')}
-                        style={styles.logoImage}
-                        contentFit="contain"
-                      />
+                <View style={styles.cardContent}>
+                  {/* Top Category / Benefit Pill */}
+                  <View style={styles.pillContainer}>
+                    <View style={styles.pillTag}>
+                      {renderPillIcon(item.pillIcon)}
+                      <Text style={styles.pillText}>{item.pillTag}</Text>
                     </View>
+                  </View>
 
-                    <View style={styles.priceContainer}>
-                      <View style={styles.priceNumberRow}>
-                        <Text style={styles.priceText}>₹{item.price}</Text>
-                        <Text style={styles.mrpText}>₹{item.mrp}</Text>
+                  {/* Card Title & Subtitle */}
+                  <Text style={styles.cardTitle}>{item.title}</Text>
+                  <Text style={styles.cardSubtitle}>{item.description}</Text>
+
+                  {/* Bottom Row: RailQuick Logo Box, Price Breakdown, and ADD Button */}
+                  <View style={styles.bottomRow}>
+                    {/* Left: RailQuick Logo Box & Price */}
+                    <View style={styles.productInfoLeft}>
+                      {/* RailQuick Logo image inside white card instead of symbol */}
+                      <View style={styles.iconBox}>
+                        <Image
+                          source={require('../../assets/images/railquick_logo.png')}
+                          style={styles.logoImage}
+                          contentFit="contain"
+                        />
                       </View>
-                      <Text style={styles.discountText}>{item.discount}</Text>
+
+                      <View style={styles.priceContainer}>
+                        <View style={styles.priceNumberRow}>
+                          <Text style={styles.priceText}>₹{item.price}</Text>
+                          <Text style={styles.mrpText}>₹{item.mrp}</Text>
+                        </View>
+                        <Text style={styles.discountText}>{item.discount}</Text>
+                      </View>
                     </View>
-                  </View>
 
-                  {/* Right: Working ADD / Stepper Button */}
-                  <View style={styles.actionContainer}>
-                    {qty === 0 ? (
-                      <TouchableOpacity
-                        activeOpacity={0.85}
-                        onPress={(e) => {
-                          e.stopPropagation?.();
-                          addToCart(item.id);
-                        }}
-                        style={styles.addButton}
-                      >
-                        <Text
-                          style={[
-                            styles.addButtonText,
-                            { color: item.accentColor },
-                          ]}
-                        >
-                          ADD
-                        </Text>
-                      </TouchableOpacity>
-                    ) : (
-                      <View style={styles.stepperContainer}>
+                    {/* Right: Working ADD / Stepper Button */}
+                    <View style={styles.actionContainer}>
+                      {qty === 0 ? (
                         <TouchableOpacity
-                          activeOpacity={0.7}
-                          onPress={(e) => {
-                            e.stopPropagation?.();
-                            removeFromCart(item.id);
-                          }}
-                          style={styles.stepperBtn}
-                        >
-                          <Minus size={13} color={item.accentColor} strokeWidth={3} />
-                        </TouchableOpacity>
-
-                        <Text style={[styles.stepperQty, { color: item.accentColor }]}>
-                          {qty}
-                        </Text>
-
-                        <TouchableOpacity
-                          activeOpacity={0.7}
+                          activeOpacity={0.85}
                           onPress={(e) => {
                             e.stopPropagation?.();
                             addToCart(item.id);
                           }}
-                          style={styles.stepperBtn}
+                          style={styles.addButton}
                         >
-                          <Plus size={13} color={item.accentColor} strokeWidth={3} />
+                          <Text
+                            style={[
+                              styles.addButtonText,
+                              { color: item.accentColor },
+                            ]}
+                          >
+                            ADD
+                          </Text>
                         </TouchableOpacity>
-                      </View>
-                    )}
+                      ) : (
+                        <View style={styles.stepperContainer}>
+                          <TouchableOpacity
+                            activeOpacity={0.7}
+                            onPress={(e) => {
+                              e.stopPropagation?.();
+                              removeFromCart(item.id);
+                            }}
+                            style={styles.stepperBtn}
+                          >
+                            <Minus size={13} color={item.accentColor} strokeWidth={3} />
+                          </TouchableOpacity>
+
+                          <Text style={[styles.stepperQty, { color: item.accentColor }]}>
+                            {qty}
+                          </Text>
+
+                          <TouchableOpacity
+                            activeOpacity={0.7}
+                            onPress={(e) => {
+                              e.stopPropagation?.();
+                              addToCart(item.id);
+                            }}
+                            style={styles.stepperBtn}
+                          >
+                            <Plus size={13} color={item.accentColor} strokeWidth={3} />
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
                   </View>
                 </View>
-              </LinearGradient>
+              </View>
             </TouchableOpacity>
           );
         })}
@@ -291,9 +306,15 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.14,
     shadowRadius: 10,
     elevation: 4,
+    backgroundColor: '#1E293B',
   },
-  cardGradient: {
+  cardInner: {
     borderRadius: 22,
+    overflow: 'hidden',
+    minHeight: 180,
+    position: 'relative',
+  },
+  cardContent: {
     padding: 16,
     minHeight: 180,
     justifyContent: 'space-between',

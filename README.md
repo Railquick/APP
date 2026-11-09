@@ -666,3 +666,6 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
   <strong>🚂 RailQuick — Essentials delivered to your berth, before the train departs.</strong>
 </p>
 
+## Steps to start metro
+1.npx expo start
+2. a for android , i for ios
