@@ -15,6 +15,7 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
+import { useAuth } from '../context/AuthContext';
 
 interface GoogleSignInButtonProps {
   delay?: number;
@@ -30,6 +31,13 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(18);
+
+  let authCtx: any = null;
+  try {
+    authCtx = useAuth();
+  } catch {
+    // Fallback if rendered outside provider
+  }
 
   useEffect(() => {
     opacity.value = withDelay(
@@ -59,8 +67,11 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
 
     try {
       setIsLoading(true);
-      // Simulate real auth handshake delay
-      await new Promise((resolve) => setTimeout(resolve, 700));
+      if (authCtx?.signInWithGoogle) {
+        await authCtx.signInWithGoogle();
+      } else {
+        await new Promise((resolve) => setTimeout(resolve, 600));
+      }
       setIsLoading(false);
       if (onSignInSuccess) {
         onSignInSuccess();

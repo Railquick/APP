@@ -45,6 +45,7 @@ import {
   CATEGORIES,
 } from '../../data/marketplaceData';
 import { useJourney } from '../../context/JourneyContext';
+import { useAuth } from '../../context/AuthContext';
 
 const SEARCH_SUGGESTIONS = [
   'USB-C fast cable',
@@ -84,6 +85,17 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
     }
   } catch {
     // Fallback if rendered outside provider
+  }
+
+  // Real user profile from AuthContext (auth.py)
+  let user: any = null;
+  try {
+    const authCtx = useAuth();
+    if (authCtx?.user) {
+      user = authCtx.user;
+    }
+  } catch {
+    // Fallback
   }
 
   // ================= CHARACTER-BY-CHARACTER TYPEWRITER ANIMATION =================
@@ -200,7 +212,19 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
             activeOpacity={0.8}
             onPress={onProfilePress}
           >
-            <User size={18} color="#08763A" />
+            {user?.avatarUrl ? (
+              <Image
+                source={{ uri: user.avatarUrl }}
+                style={styles.headerAvatarImg}
+                contentFit="cover"
+              />
+            ) : user?.name ? (
+              <Text style={styles.headerAvatarInitial}>
+                {user.name.charAt(0).toUpperCase()}
+              </Text>
+            ) : (
+              <User size={18} color="#08763A" />
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -503,6 +527,17 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 3,
     elevation: 1,
+    overflow: 'hidden',
+  },
+  headerAvatarImg: {
+    width: 33,
+    height: 33,
+    borderRadius: 16.5,
+  },
+  headerAvatarInitial: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#08763A',
   },
 
   // ---- Line 2: Train & Seat Row (Transparent, No Container, Exactly as User Reference) ----

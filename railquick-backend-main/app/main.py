@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import trains, catalog, orders, auth
+from app.routers import trains, catalog, orders, auth, users
 
 app = FastAPI(
     title="RailQuick Core Backend API",
@@ -20,6 +20,7 @@ app.include_router(trains.router)
 app.include_router(catalog.router)
 app.include_router(orders.router)
 app.include_router(auth.router)
+app.include_router(users.router)
 
 @app.get("/")
 def health_check():

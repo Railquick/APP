@@ -41,6 +41,7 @@ import { useJourney } from '../context/JourneyContext';
 import { useOrder } from '../context/OrderContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 
 interface ProfileScreenProps {
   onNavigateBack: () => void;
@@ -56,6 +57,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   onSignOut,
 }) => {
   const insets = useSafeAreaInsets();
+  const { user, updateProfile: updateAuthProfile, signOut: authSignOut } = useAuth();
   const { journey, updateSeat, updateStation, updatePassenger } = useJourney();
   const { orders, getRunningOrders } = useOrder();
   const { wishlistItems, wishlistCount, removeFromWishlist } = useWishlist();
@@ -68,6 +70,20 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const [isAddressModalVisible, setIsAddressModalVisible] = useState(false);
   const [isSeatModalVisible, setIsSeatModalVisible] = useState(false);
   const [isWishlistModalVisible, setIsWishlistModalVisible] = useState(false);
+  const [isEditProfileVisible, setIsEditProfileVisible] = useState(false);
+
+  // Edit Profile form state (PUT /api/v1/users/me)
+  const [editName, setEditName] = useState(user.name);
+  const [editPhone, setEditPhone] = useState(user.phone);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+
+  // Sync edit form state when user changes
+  React.useEffect(() => {
+    if (user) {
+      setEditName(user.name);
+      setEditPhone(user.phone);
+    }
+  }, [user]);
 
   // Address Book state
   const [savedAddresses, setSavedAddresses] = useState([
@@ -97,10 +113,30 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const [seatStation, setSeatStation] = useState(journey.station || 'Hazrat Nizamuddin (NZM)');
   const [seatPlatform, setSeatPlatform] = useState(journey.platform || 'PF 1');
 
-  // Passenger profile info
-  const [passengerName, setPassengerName] = useState(journey.passengerName || 'Varun Sharma');
-  const [passengerEmail, setPassengerEmail] = useState('varun.sharma@gmail.com');
-  const [passengerPhone, setPassengerPhone] = useState(journey.passengerPhone || '9876543210');
+  // Handle Save Profile to backend (PUT /api/v1/users/me)
+  const handleSaveProfile = async () => {
+    if (!editName.trim()) {
+      Alert.alert('Required', 'Please enter your name.');
+      return;
+    }
+    const cleaned = editPhone.replace(/\D/g, '');
+    if (cleaned.length !== 10) {
+      Alert.alert('Invalid Mobile', 'Please enter a valid 10-digit mobile number.');
+      return;
+    }
+
+    try {
+      setIsSavingProfile(true);
+      await updateAuthProfile(editName.trim(), cleaned);
+      updatePassenger(editName.trim(), cleaned);
+      setIsEditProfileVisible(false);
+      Alert.alert('Profile Updated! ✅', 'Your changes have been saved.');
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || 'Failed to update profile.');
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
 
   const handleSaveSeatDetails = () => {
     if (!seatCoach.trim() || !seatBerth.trim()) {
@@ -153,7 +189,10 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         {
           text: 'Sign Out',
           style: 'destructive',
-          onPress: onSignOut,
+          onPress: async () => {
+            await authSignOut();
+            onSignOut();
+          },
         },
       ]
     );
@@ -191,13 +230,21 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* ================= 1. USER PROFILE IDENTITY CARD ================= */}
+        {/* ================= 1. USER PROFILE IDENTITY CARD (Connected to Real Backend Auth & Users) ================= */}
         <View style={styles.profileCard}>
           <View style={styles.avatarSection}>
             <View style={styles.avatarCircle}>
-              <Text style={styles.avatarInitial}>
-                {passengerName ? passengerName.charAt(0).toUpperCase() : 'V'}
-              </Text>
+              {user.avatarUrl ? (
+                <Image
+                  source={{ uri: user.avatarUrl }}
+                  style={styles.avatarImage}
+                  contentFit="cover"
+                />
+              ) : (
+                <Text style={styles.avatarInitial}>
+                  {user.name ? user.name.charAt(0).toUpperCase() : 'A'}
+                </Text>
+              )}
               <View style={styles.verifiedTick}>
                 <Check size={11} color="#FFFFFF" strokeWidth={3} />
               </View>
@@ -205,7 +252,20 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
             <View style={styles.identityCol}>
               <View style={styles.nameRow}>
-                <Text style={styles.userNameText}>{passengerName}</Text>
+                <Text style={styles.userNameText} numberOfLines={1}>
+                  {user.name}
+                </Text>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => setIsEditProfileVisible(true)}
+                  style={styles.editProfileBtn}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Edit3 size={14} color="#159447" />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.irctcBadgeRow}>
                 <View style={styles.irctcBadge}>
                   <ShieldCheck size={11} color="#159447" />
                   <Text style={styles.irctcBadgeText}>IRCTC Verified</Text>
@@ -214,12 +274,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
               <View style={styles.contactLine}>
                 <Mail size={12} color="#64748B" />
-                <Text style={styles.contactText}>{passengerEmail}</Text>
+                <Text style={styles.contactText}>{user.email}</Text>
               </View>
 
               <View style={styles.contactLine}>
                 <Phone size={12} color="#64748B" />
-                <Text style={styles.contactText}>+91 {passengerPhone}</Text>
+                <Text style={styles.contactText}>+91 {user.phone}</Text>
               </View>
             </View>
           </View>
@@ -792,6 +852,73 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           </View>
         </View>
       </Modal>
+
+      {/* ================= EDIT PROFILE MODAL (PUT /api/v1/users/me) ================= */}
+      <Modal
+        visible={isEditProfileVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsEditProfileVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHeader}>
+              <View style={styles.modalHeaderLeft}>
+                <Edit3 size={20} color="#159447" strokeWidth={2.4} />
+                <View>
+                  <Text style={styles.modalTitle}>Edit Profile</Text>
+                  <Text style={styles.modalSubtitle}>Syncs to RailQuick users API</Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                onPress={() => setIsEditProfileVisible(false)}
+                style={styles.modalCloseBtn}
+              >
+                <X size={20} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Text style={styles.inputLabel}>FULL NAME</Text>
+              <TextInput
+                value={editName}
+                onChangeText={setEditName}
+                placeholder="e.g. Ayush Mishra"
+                placeholderTextColor="#94A3B8"
+                style={styles.modalTextInput}
+              />
+
+              <Text style={[styles.inputLabel, { marginTop: 12 }]}>PHONE NUMBER (10 DIGITS)</Text>
+              <TextInput
+                value={editPhone}
+                onChangeText={setEditPhone}
+                placeholder="e.g. 9876543210"
+                placeholderTextColor="#94A3B8"
+                keyboardType="phone-pad"
+                maxLength={10}
+                style={styles.modalTextInput}
+              />
+
+              <Text style={[styles.inputLabel, { marginTop: 12 }]}>EMAIL ADDRESS (GOOGLE ACCOUNT)</Text>
+              <View style={[styles.modalTextInput, styles.disabledInput]}>
+                <Text style={styles.disabledInputText}>{user.email}</Text>
+              </View>
+
+              <TouchableOpacity
+                activeOpacity={0.88}
+                onPress={handleSaveProfile}
+                style={[styles.saveBtn, isSavingProfile && { opacity: 0.7 }, { marginTop: 20 }]}
+                disabled={isSavingProfile}
+              >
+                <Check size={16} color="#FFFFFF" strokeWidth={2.6} />
+                <Text style={styles.saveBtnText}>
+                  {isSavingProfile ? 'Saving Changes...' : 'Save Profile'}
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -893,6 +1020,37 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontWeight: '900',
     color: '#FFFFFF',
+  },
+  avatarImage: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+  },
+  editProfileBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#E7F8EE',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#C3EDD1',
+  },
+  irctcBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  disabledInput: {
+    backgroundColor: '#F8FAFC',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  disabledInputText: {
+    fontSize: 13.5,
+    color: '#64748B',
+    fontWeight: '500',
   },
   verifiedTick: {
     position: 'absolute',
