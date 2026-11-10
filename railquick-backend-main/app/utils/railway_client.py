@@ -447,7 +447,7 @@ class RailwayClient:
             stops_res = (
                 self.supabase.table("train_stops")
                 .select(
-                    "station_code, stop_sequence, arrival_time, departure_time, halt_minutes, stations(name, state, is_serviceable)"
+                    "station_code, stop_sequence, arrival_time, departure_time, halt_minutes, day_offset, stations(name, state, is_serviceable)"
                 )
                 .eq("train_no", train_no)
                 .order("stop_sequence")
@@ -474,7 +474,7 @@ class RailwayClient:
                         "scheduled_departure": stop.get("departure_time"),
                         "halt_minutes": int(stop.get("halt_minutes") or 0),
                         "delay_minutes": 0,
-                        "day_offset": 1,
+                        "day_offset": int(stop.get("day_offset") if stop.get("day_offset") is not None else 0),
                         "platform": None,
                         "is_serviceable": is_serviceable,
                     }
