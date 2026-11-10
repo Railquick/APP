@@ -6,6 +6,10 @@ import { useJourney } from './JourneyContext';
 import { paymentService } from '../services/paymentService';
 import { orderService } from '../services/orderService';
 
+export interface PlaceOrderOptions {
+  shouldClearCart?: boolean;
+}
+
 export interface OrderContextType {
   activeOrder: Order | null;
   orders: Order[];
@@ -13,7 +17,8 @@ export interface OrderContextType {
   orderError: string | null;
   placeOrder: (
     paymentMethod: PaymentMethodId,
-    passengerDetails?: { name?: string; phone?: string }
+    passengerDetails?: { name?: string; phone?: string },
+    options?: PlaceOrderOptions
   ) => Promise<Order>;
   setActiveOrder: (order: Order | null) => void;
 }
@@ -36,7 +41,8 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const placeOrder = async (
     paymentMethod: PaymentMethodId,
-    passengerDetails?: { name?: string; phone?: string }
+    passengerDetails?: { name?: string; phone?: string },
+    options?: PlaceOrderOptions
   ): Promise<Order> => {
     if (items.length === 0) {
       throw new Error('Your cart is empty. Please add items before checking out.');
@@ -64,8 +70,11 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         passengerDetails
       );
 
-      // 3. Clear active cart after successful order creation
-      clearCart();
+      // 3. Clear active cart ONLY if explicitly requested (defaults to false)
+      // For online payment gateways (PhonePe), the cart is cleared only after gateway URL is obtained!
+      if (options?.shouldClearCart) {
+        clearCart();
+      }
 
       // 4. Update order state
       setActiveOrder(newOrder);

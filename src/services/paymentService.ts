@@ -35,7 +35,7 @@ class PaymentService {
       `${API_BASE_URL.replace(/\/$/, '')}/api/v1/payments/initiate-phonepe`,
       '/api/v1/payments/initiate-phonepe',
       'https://railquick-backend.onrender.com/api/v1/payments/initiate-phonepe',
-      'http://localhost:8000/api/v1/payments/initiate-phonepe',
+
     ];
 
     let lastError: any = null;

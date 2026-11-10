@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useCart } from '../context/CartContext';
 import { useJourney } from '../context/JourneyContext';
 import { useOrder } from '../context/OrderContext';
+import { Order } from '../types/order';
 import { PaymentMethodId } from '../types/payment';
 import { paymentService } from '../services/paymentService';
 import CheckoutHeader from '../components/common/CheckoutHeader';
@@ -25,7 +26,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({
   onNavigateBack,
   onPaymentSuccess,
 }) => {
-  const { summary } = useCart();
+  const { summary, clearCart } = useCart();
   const { journey, updatePassenger } = useJourney();
   const { placeOrder, isPlacingOrder } = useOrder();
 
@@ -41,6 +42,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({
   );
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [supportModalVisible, setSupportModalVisible] = useState(false);
+  const [createdOrder, setCreatedOrder] = useState<Order | null>(null);
 
   const handlePay = async () => {
     if (isPlacingOrder || isSuccess || isRedirecting) return;
@@ -71,33 +73,54 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({
     // Save passenger details in context
     updatePassenger(passengerName, cleanPhone);
 
+    // If cart total changed since initial order creation, reset cached order reference
+    let orderToPay = createdOrder;
+    if (orderToPay && orderToPay.totalAmount !== summary.totalPayable) {
+      orderToPay = null;
+      setCreatedOrder(null);
+    }
+
     try {
-      // 1. Create and persist order record first
-      const newOrder = await placeOrder(selectedMethod, {
-        name: passengerName,
-        phone: cleanPhone,
-      });
+      // 1. Create and persist order record if not already created
+      // Crucial: Pass { shouldClearCart: false } so cart items and total are preserved!
+      if (!orderToPay) {
+        orderToPay = await placeOrder(
+          selectedMethod,
+          {
+            name: passengerName,
+            phone: cleanPhone,
+          },
+          { shouldClearCart: false }
+        );
+        setCreatedOrder(orderToPay);
+      }
 
       // 2. Initiate PhonePe payment session
       setIsRedirecting(true);
       try {
         const paymentUrl = await paymentService.initiatePhonePePayment(
-          newOrder.orderId,
+          orderToPay.orderId,
           summary.totalPayable
         );
 
         if (paymentUrl) {
-          // 3. Redirect user to PhonePe standard gateway
+          // 3. ONLY call clearCart() after PhonePe initiation returns a valid payment_url and just before redirecting!
+          clearCart();
+
+          // Redirect user to PhonePe standard gateway
           if (typeof window !== 'undefined') {
             window.location.href = paymentUrl;
           } else {
             await Linking.openURL(paymentUrl);
           }
           return;
+        } else {
+          throw new Error('PhonePe gateway did not provide a valid redirect URL.');
         }
       } catch (gatewayErr: any) {
         console.warn('PhonePe gateway redirect error:', gatewayErr);
         setIsRedirecting(false);
+        // Cart is NOT cleared - keep cart items and total amount intact so user can retry!
         const errorMsg =
           gatewayErr?.message ||
           'Unable to connect to PhonePe gateway. Please retry or contact support.';
@@ -106,8 +129,9 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({
         return;
       }
 
+      // If online redirect was skipped or for instant success fallback:
+      clearCart();
       setIsSuccess(true);
-      // Brief delay for feedback if redirect was skipped
       setTimeout(() => {
         onPaymentSuccess();
       }, 750);

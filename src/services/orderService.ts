@@ -4,6 +4,7 @@ import { PaymentTransaction } from '../types/payment';
 import { CartSummary } from '../types/cart';
 import { ProductItem } from '../types/product';
 import { DEFAULT_RUNNER, generateTrackingSteps } from './trackingService';
+import { API_BASE_URL } from '../config/constants';
 
 /**
  * Converts non-UUID product IDs (like string or mock IDs) to a deterministic UUIDv4 format
@@ -72,11 +73,9 @@ class OrderService {
 
     let backendResponse: any = null;
     const apiEndpoints = [
-      (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_API_URL
-        ? `${process.env.EXPO_PUBLIC_API_URL}/api/v1/orders/create`
-        : null),
+      `${API_BASE_URL.replace(/\/$/, '')}/api/v1/orders/create`,
+      'https://railquick-backend.onrender.com/api/v1/orders/create',
       '/api/v1/orders/create',
-      'http://localhost:8000/api/v1/orders/create',
     ].filter(Boolean) as string[];
 
     for (const endpoint of apiEndpoints) {

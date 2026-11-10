@@ -3,9 +3,23 @@
  * Hazrat Nizamuddin (NZM) Pilot Phase
  */
 
+const isWeb = typeof window !== 'undefined';
+const isLocalhost =
+  isWeb &&
+  (window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1');
+
+const envApiUrl =
+  typeof process !== 'undefined' ? process.env?.EXPO_PUBLIC_API_URL : undefined;
+
+// When running in web production (not on localhost) or when env var points to localhost or is unset,
+// strictly point to the production backend URL on Render.
 export const API_BASE_URL: string =
-  (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_API_URL) ||
-  'https://railquick-backend.onrender.com';
+  isWeb && !isLocalhost
+    ? 'https://railquick-backend.onrender.com'
+    : envApiUrl && !envApiUrl.includes('localhost')
+    ? envApiUrl
+    : 'https://railquick-backend.onrender.com';
 
 export const SUPPORT_CONFIG = {
   // 24x7 Station Operations & Hub Support
