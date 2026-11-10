@@ -69,7 +69,7 @@ export const MarketplaceBottomNav: React.FC<MarketplaceBottomNavProps> = ({
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           const IconComponent = tab.icon;
-          const color = isActive ? '#159447' : '#64748B';
+          const color = isActive ? '#E98B54' : '#79665B';
 
           return (
             <TouchableOpacity
@@ -108,20 +108,20 @@ const styles = StyleSheet.create({
     zIndex: 50,
   },
   pill: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FFFDFB',
     borderRadius: 26,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
     paddingVertical: 8,
     paddingHorizontal: 6,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.14,
-    shadowRadius: 18,
-    elevation: 14,
+    shadowColor: '#8C3D1E',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 14,
+    elevation: 10,
     borderWidth: 1,
-    borderColor: '#F1F5F9',
+    borderColor: '#EFC1A8',
   },
   tabButton: {
     alignItems: 'center',
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
     width: 20,
     height: 3,
     borderRadius: 2,
-    backgroundColor: '#159447',
+    backgroundColor: '#E98B54',
   },
   tabLabel: {
     fontSize: 9.5,

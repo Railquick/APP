@@ -11,6 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -25,6 +26,7 @@ import {
   Heart,
   LogOut,
   ChevronRight,
+  ChevronDown,
   Edit3,
   Check,
   X,
@@ -36,6 +38,9 @@ import {
   Headphones,
   Sparkles,
   Zap,
+  Moon,
+  Sliders,
+  Smartphone,
 } from 'lucide-react-native';
 import { useJourney } from '../context/JourneyContext';
 import { useOrder } from '../context/OrderContext';
@@ -202,27 +207,23 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     <View style={styles.container}>
       <StatusBar style="dark" />
 
-      {/* ================= FIXED TOP HEADER ================= */}
-      <View style={[styles.headerContainer, { paddingTop: Math.max(insets.top, 12) }]}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity
-            activeOpacity={0.75}
-            onPress={onNavigateBack}
-            style={styles.backButton}
-          >
-            <ArrowLeft size={20} color="#0F172A" strokeWidth={2.4} />
-          </TouchableOpacity>
+      {/* ================= TOP FLOATING NAVIGATION BAR ================= */}
+      <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 14) }]}>
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={onNavigateBack}
+          style={styles.circleNavBtn}
+        >
+          <ArrowLeft size={20} color="#0F172A" strokeWidth={2.4} />
+        </TouchableOpacity>
 
-          <Text style={styles.headerTitle}>My Profile</Text>
-
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={onNavigateToCart}
-            style={styles.cartIconButton}
-          >
-            <ShoppingBag size={18} color="#159447" strokeWidth={2.4} />
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={onNavigateToCart}
+          style={styles.circleCartBtn}
+        >
+          <ShoppingBag size={18} color="#159447" strokeWidth={2.4} />
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -230,223 +231,285 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* ================= 1. USER PROFILE IDENTITY CARD (Connected to Real Backend Auth & Users) ================= */}
-        <View style={styles.profileCard}>
-          <View style={styles.avatarSection}>
-            <View style={styles.avatarCircle}>
+        {/* ================= 1. CENTERED PROFILE HERO SECTION ================= */}
+        <View style={styles.heroSection}>
+          {/* Subtle Ambient Radial Glow behind Avatar */}
+          <View style={styles.ambientGlow} />
+
+          {/* Centered Avatar */}
+          <View style={styles.centeredAvatarContainer}>
+            <View style={styles.avatarCircleLarge}>
               {user.avatarUrl ? (
                 <Image
                   source={{ uri: user.avatarUrl }}
-                  style={styles.avatarImage}
+                  style={styles.avatarImageLarge}
                   contentFit="cover"
                 />
               ) : (
-                <Text style={styles.avatarInitial}>
+                <Text style={styles.avatarInitialLarge}>
                   {user.name ? user.name.charAt(0).toUpperCase() : 'A'}
                 </Text>
               )}
-              <View style={styles.verifiedTick}>
-                <Check size={11} color="#FFFFFF" strokeWidth={3} />
+              <View style={styles.verifiedTickLarge}>
+                <Check size={12} color="#FFFFFF" strokeWidth={3} />
               </View>
             </View>
+          </View>
 
-            <View style={styles.identityCol}>
-              <View style={styles.nameRow}>
-                <Text style={styles.userNameText} numberOfLines={1}>
-                  {user.name}
-                </Text>
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={() => setIsEditProfileVisible(true)}
-                  style={styles.editProfileBtn}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <Edit3 size={14} color="#159447" />
-                </TouchableOpacity>
-              </View>
+          {/* User Name / Account Title */}
+          <View style={styles.userNameRow}>
+            <Text style={styles.accountHeading}>
+              {user.name || 'Your account'}
+            </Text>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => setIsEditProfileVisible(true)}
+              style={styles.miniEditBtn}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Edit3 size={13} color="#159447" strokeWidth={2.4} />
+            </TouchableOpacity>
+          </View>
 
-              <View style={styles.irctcBadgeRow}>
-                <View style={styles.irctcBadge}>
-                  <ShieldCheck size={11} color="#159447" />
-                  <Text style={styles.irctcBadgeText}>IRCTC Verified</Text>
-                </View>
-              </View>
+          {/* Phone Number & IRCTC Badge */}
+          <Text style={styles.userPhoneSubtitle}>
+            +91 {user.phone}
+          </Text>
 
-              <View style={styles.contactLine}>
-                <Mail size={12} color="#64748B" />
-                <Text style={styles.contactText}>{user.email}</Text>
-              </View>
-
-              <View style={styles.contactLine}>
-                <Phone size={12} color="#64748B" />
-                <Text style={styles.contactText}>+91 {user.phone}</Text>
-              </View>
+          <View style={styles.irctcTagRow}>
+            <View style={styles.irctcBadge}>
+              <ShieldCheck size={11} color="#159447" />
+              <Text style={styles.irctcBadgeText}>IRCTC Verified Passenger</Text>
             </View>
           </View>
         </View>
 
-        {/* ================= 2. TWO HIGHLIGHT ACTION BOXES ================= */}
-        <View style={styles.highlightBoxesRow}>
-          {/* Box 1: Your Orders */}
+        {/* ================= 2. BANNER CARD (e.g. In-Berth Delivery / Journey Perk) ================= */}
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onPress={() => setIsSeatModalVisible(true)}
+          style={styles.bannerCard}
+        >
+          <LinearGradient
+            colors={['#FFFBEB', '#FEF3C7']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.bannerGradient}
+          >
+            <View style={styles.bannerLeft}>
+              <Text style={styles.bannerTitle}>Active Train Journey</Text>
+              <View style={styles.bannerActionRow}>
+                <Text style={styles.bannerActionText}>
+                  Coach {journey.coach} • Berth {journey.berth} ({journey.berthType})
+                </Text>
+                <ChevronRight size={13} color="#B45309" strokeWidth={2.6} />
+              </View>
+            </View>
+
+            <View style={styles.bannerGraphicBox}>
+              <View style={styles.bannerIconCircle}>
+                <Train size={24} color="#D97706" strokeWidth={2.2} />
+              </View>
+            </View>
+          </LinearGradient>
+        </TouchableOpacity>
+
+        {/* ================= 3. THREE QUICK ACTION CARDS (1 ROW, 3 EQUAL COLUMNS) ================= */}
+        <View style={styles.threeActionRow}>
+          {/* Action 1: Your orders */}
           <TouchableOpacity
             activeOpacity={0.88}
             onPress={onNavigateToOrders}
-            style={[styles.highlightBox, styles.ordersBox]}
+            style={styles.actionColumnCard}
           >
-            <View style={styles.highlightTopRow}>
-              <View style={[styles.highlightIconBox, { backgroundColor: '#E7F8EE' }]}>
-                <Package size={22} color="#159447" strokeWidth={2.3} />
+            <View style={[styles.actionIconBox, { backgroundColor: '#E7F8EE' }]}>
+              <Package size={22} color="#159447" strokeWidth={2.3} />
+            </View>
+            <Text style={styles.actionCardTitle}>Your orders</Text>
+            {runningOrders.length > 0 ? (
+              <View style={styles.livePulsePill}>
+                <View style={styles.pulseDot} />
+                <Text style={styles.livePillText}>1 Live</Text>
               </View>
-              {runningOrders.length > 0 ? (
-                <View style={styles.liveOrderPill}>
-                  <View style={styles.livePulseDot} />
-                  <Text style={styles.liveOrderPillText}>1 Live</Text>
-                </View>
-              ) : (
-                <View style={styles.ordersCountPill}>
-                  <Text style={styles.ordersCountText}>{orders.length} total</Text>
-                </View>
-              )}
-            </View>
-
-            <Text style={styles.highlightTitle}>Your Orders</Text>
-            <Text style={styles.highlightSubtitle}>
-              {runningOrders.length > 0
-                ? 'Track runner & reorder past meals'
-                : 'View order history & receipts'}
-            </Text>
-
-            <View style={styles.highlightActionRow}>
-              <Text style={styles.highlightActionText}>View Orders</Text>
-              <ChevronRight size={14} color="#159447" strokeWidth={2.4} />
-            </View>
+            ) : (
+              <Text style={styles.actionCardSub}>{orders.length} total</Text>
+            )}
           </TouchableOpacity>
 
-          {/* Box 2: Need Help? */}
+          {/* Action 2: Seat details */}
+          <TouchableOpacity
+            activeOpacity={0.88}
+            onPress={() => setIsSeatModalVisible(true)}
+            style={styles.actionColumnCard}
+          >
+            <View style={[styles.actionIconBox, { backgroundColor: '#FEF3C7' }]}>
+              <Train size={22} color="#D97706" strokeWidth={2.3} />
+            </View>
+            <Text style={styles.actionCardTitle}>Seat details</Text>
+            <Text style={styles.actionCardSub}>Coach {journey.coach}</Text>
+          </TouchableOpacity>
+
+          {/* Action 3: Need help? */}
           <TouchableOpacity
             activeOpacity={0.88}
             onPress={() => setIsHelpModalVisible(true)}
-            style={[styles.highlightBox, styles.helpBox]}
+            style={styles.actionColumnCard}
           >
-            <View style={styles.highlightTopRow}>
-              <View style={[styles.highlightIconBox, { backgroundColor: '#EFF6FF' }]}>
-                <Headphones size={22} color="#2563EB" strokeWidth={2.3} />
-              </View>
-              <View style={styles.helpOnlinePill}>
-                <View style={[styles.livePulseDot, { backgroundColor: '#3B82F6' }]} />
-                <Text style={styles.helpOnlineText}>24x7</Text>
-              </View>
+            <View style={[styles.actionIconBox, { backgroundColor: '#EFF6FF' }]}>
+              <Headphones size={22} color="#2563EB" strokeWidth={2.3} />
             </View>
-
-            <Text style={styles.highlightTitle}>Need Help?</Text>
-            <Text style={styles.highlightSubtitle}>
-              Coach delivery support, refund & FAQs
-            </Text>
-
-            <View style={styles.highlightActionRow}>
-              <Text style={[styles.highlightActionText, { color: '#2563EB' }]}>
-                Get Help
-              </Text>
-              <ChevronRight size={14} color="#2563EB" strokeWidth={2.4} />
-            </View>
+            <Text style={styles.actionCardTitle}>Need help?</Text>
+            <Text style={styles.actionCardSub}>24x7 desk</Text>
           </TouchableOpacity>
         </View>
 
-        {/* ================= 3. SECTION: YOUR INFORMATION ================= */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>YOUR INFORMATION</Text>
+        {/* ================= 4. WIDE ACTION CARD (App update / Partner) ================= */}
+        <View style={styles.wideStatusCard}>
+          <View style={styles.wideCardIconBox}>
+            <Smartphone size={20} color="#0F172A" strokeWidth={2.2} />
+          </View>
+          <View style={styles.wideCardTextCol}>
+            <Text style={styles.wideCardTitle}>RailQuick Express</Text>
+            <Text style={styles.wideCardSub}>Official IRCTC Berth Express Delivery</Text>
+          </View>
+          <View style={styles.versionPill}>
+            <Text style={styles.versionPillText}>v1.4.2</Text>
+          </View>
         </View>
 
-        {/* Card 1: Address Book */}
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={() => setIsAddressModalVisible(true)}
-          style={styles.infoCard}
-        >
-          <View style={[styles.infoCardIcon, { backgroundColor: '#E7F8EE' }]}>
-            <MapPin size={20} color="#159447" strokeWidth={2.2} />
+        {/* ================= 5. SETTING / PREFERENCE ROWS ================= */}
+        {/* Appearance Row */}
+        <View style={styles.settingCardRow}>
+          <View style={styles.settingLeft}>
+            <Moon size={18} color="#0F172A" strokeWidth={2.2} />
+            <Text style={styles.settingLabel}>Appearance</Text>
           </View>
-          <View style={styles.infoCardContent}>
-            <View style={styles.infoCardTitleRow}>
-              <Text style={styles.infoCardTitle}>Address Book</Text>
-              <View style={styles.countBadge}>
-                <Text style={styles.countBadgeText}>{savedAddresses.length} Saved</Text>
-              </View>
-            </View>
-            <Text style={styles.infoCardSubtitle} numberOfLines={1}>
-              {savedAddresses[0]?.station} • {savedAddresses[0]?.platform}
-            </Text>
+          <View style={styles.settingRight}>
+            <Text style={styles.settingValueText}>SYSTEM</Text>
+            <ChevronDown size={14} color="#64748B" strokeWidth={2.2} />
           </View>
-          <ChevronRight size={18} color="#94A3B8" />
-        </TouchableOpacity>
+        </View>
 
-        {/* Card 2: Seat Details */}
+        {/* Content / Seat Preferences Row (Highlighted with Green border) */}
         <TouchableOpacity
-          activeOpacity={0.8}
+          activeOpacity={0.88}
           onPress={() => setIsSeatModalVisible(true)}
-          style={styles.infoCard}
+          style={styles.highlightPreferenceCard}
         >
-          <View style={[styles.infoCardIcon, { backgroundColor: '#FEF3C7' }]}>
-            <Train size={20} color="#D97706" strokeWidth={2.2} />
+          <View style={styles.settingLeft}>
+            <Sliders size={18} color="#159447" strokeWidth={2.2} />
+            <Text style={[styles.settingLabel, { color: '#0F172A' }]}>
+              Content & seat preferences
+            </Text>
           </View>
-          <View style={styles.infoCardContent}>
-            <View style={styles.infoCardTitleRow}>
-              <Text style={styles.infoCardTitle}>Seat Details</Text>
-              <View style={styles.activeSeatPill}>
-                <Text style={styles.activeSeatPillText}>Coach {journey.coach} • Berth {journey.berth}</Text>
-              </View>
+          <View style={styles.newBadgePill}>
+            <Text style={styles.newBadgeText}>NEW</Text>
+            <ChevronRight size={13} color="#FFFFFF" strokeWidth={2.5} />
+          </View>
+        </TouchableOpacity>
+
+        {/* ================= 6. SECTION: YOUR INFORMATION ================= */}
+        <Text style={styles.yourInfoHeading}>Your information</Text>
+
+        <View style={styles.groupedInfoCard}>
+          {/* Row 1: Address Book */}
+          <TouchableOpacity
+            activeOpacity={0.75}
+            onPress={() => setIsAddressModalVisible(true)}
+            style={styles.groupedRow}
+          >
+            <View style={[styles.groupedRowIcon, { backgroundColor: '#E7F8EE' }]}>
+              <MapPin size={18} color="#159447" strokeWidth={2.2} />
             </View>
-            <Text style={styles.infoCardSubtitle} numberOfLines={1}>
-              {journey.trainName} • {journey.station}
-            </Text>
-          </View>
-          <ChevronRight size={18} color="#94A3B8" />
-        </TouchableOpacity>
-
-        {/* Card 3: Your Wishlist */}
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={() => setIsWishlistModalVisible(true)}
-          style={styles.infoCard}
-        >
-          <View style={[styles.infoCardIcon, { backgroundColor: '#FCE7F3' }]}>
-            <Heart size={20} color="#E11D48" strokeWidth={2.2} fill="#E11D48" />
-          </View>
-          <View style={styles.infoCardContent}>
-            <View style={styles.infoCardTitleRow}>
-              <Text style={styles.infoCardTitle}>Your Wishlist</Text>
-              <View style={[styles.countBadge, { backgroundColor: '#FFE4E6' }]}>
-                <Text style={[styles.countBadgeText, { color: '#E11D48' }]}>
-                  {wishlistCount} {wishlistCount === 1 ? 'item' : 'items'}
-                </Text>
-              </View>
+            <View style={styles.groupedRowTextCol}>
+              <Text style={styles.groupedRowTitle}>Address book</Text>
+              <Text style={styles.groupedRowSub}>
+                {savedAddresses.length} saved boarding & route stations
+              </Text>
             </View>
-            <Text style={styles.infoCardSubtitle}>
-              Saved essentials for your upcoming train halts
-            </Text>
-          </View>
-          <ChevronRight size={18} color="#94A3B8" />
-        </TouchableOpacity>
+            <ChevronRight size={16} color="#94A3B8" strokeWidth={2.2} />
+          </TouchableOpacity>
 
-        {/* Card 4: Sign Out */}
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={handleConfirmSignOut}
-          style={[styles.infoCard, styles.signOutCard]}
-        >
-          <View style={[styles.infoCardIcon, { backgroundColor: '#FEE2E2' }]}>
-            <LogOut size={20} color="#DC2626" strokeWidth={2.2} />
-          </View>
-          <View style={styles.infoCardContent}>
-            <Text style={[styles.infoCardTitle, { color: '#DC2626' }]}>Sign Out</Text>
-            <Text style={styles.infoCardSubtitle}>
-              Sign out from this device
-            </Text>
-          </View>
-          <ChevronRight size={18} color="#F87171" />
-        </TouchableOpacity>
+          <View style={styles.rowDivider} />
 
-        {/* ================= 4. APP VERSION & FOOTER ================= */}
+          {/* Row 2: Station & Berth Details */}
+          <TouchableOpacity
+            activeOpacity={0.75}
+            onPress={() => setIsSeatModalVisible(true)}
+            style={styles.groupedRow}
+          >
+            <View style={[styles.groupedRowIcon, { backgroundColor: '#FEF3C7' }]}>
+              <Train size={18} color="#D97706" strokeWidth={2.2} />
+            </View>
+            <View style={styles.groupedRowTextCol}>
+              <Text style={styles.groupedRowTitle}>Station & berth details</Text>
+              <Text style={styles.groupedRowSub}>
+                {journey.trainName} • {journey.station}
+              </Text>
+            </View>
+            <ChevronRight size={16} color="#94A3B8" strokeWidth={2.2} />
+          </TouchableOpacity>
+
+          <View style={styles.rowDivider} />
+
+          {/* Row 3: Your Wishlist */}
+          <TouchableOpacity
+            activeOpacity={0.75}
+            onPress={() => setIsWishlistModalVisible(true)}
+            style={styles.groupedRow}
+          >
+            <View style={[styles.groupedRowIcon, { backgroundColor: '#FCE7F3' }]}>
+              <Heart size={18} color="#E11D48" strokeWidth={2.2} fill="#E11D48" />
+            </View>
+            <View style={styles.groupedRowTextCol}>
+              <Text style={styles.groupedRowTitle}>Your wishlist</Text>
+              <Text style={styles.groupedRowSub}>
+                {wishlistCount} {wishlistCount === 1 ? 'item' : 'items'} saved for train halts
+              </Text>
+            </View>
+            <ChevronRight size={16} color="#94A3B8" strokeWidth={2.2} />
+          </TouchableOpacity>
+
+          <View style={styles.rowDivider} />
+
+          {/* Row 4: Edit Profile & Passenger Info */}
+          <TouchableOpacity
+            activeOpacity={0.75}
+            onPress={() => setIsEditProfileVisible(true)}
+            style={styles.groupedRow}
+          >
+            <View style={[styles.groupedRowIcon, { backgroundColor: '#EDE9FE' }]}>
+              <User size={18} color="#7C3AED" strokeWidth={2.2} />
+            </View>
+            <View style={styles.groupedRowTextCol}>
+              <Text style={styles.groupedRowTitle}>Profile & passenger details</Text>
+              <Text style={styles.groupedRowSub}>
+                {user.name} • +91 {user.phone}
+              </Text>
+            </View>
+            <ChevronRight size={16} color="#94A3B8" strokeWidth={2.2} />
+          </TouchableOpacity>
+
+          <View style={styles.rowDivider} />
+
+          {/* Row 5: Sign Out */}
+          <TouchableOpacity
+            activeOpacity={0.75}
+            onPress={handleConfirmSignOut}
+            style={styles.groupedRow}
+          >
+            <View style={[styles.groupedRowIcon, { backgroundColor: '#FEE2E2' }]}>
+              <LogOut size={18} color="#DC2626" strokeWidth={2.2} />
+            </View>
+            <View style={styles.groupedRowTextCol}>
+              <Text style={[styles.groupedRowTitle, { color: '#DC2626' }]}>Sign Out</Text>
+              <Text style={styles.groupedRowSub}>Sign out from this device</Text>
+            </View>
+            <ChevronRight size={16} color="#F87171" strokeWidth={2.2} />
+          </TouchableOpacity>
+        </View>
+
+        {/* ================= 7. APP VERSION & FOOTER ================= */}
         <View style={styles.versionFooter}>
           <Text style={styles.versionHeading}>RailQuick</Text>
           <Text style={styles.versionNumber}>Version 1.4.2 • Build 2026.11.07</Text>
@@ -929,48 +992,43 @@ const styles = StyleSheet.create({
     backgroundColor: '#FAF5EA',
   },
 
-  // Fixed Header
-  headerContainer: {
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E9DFC7',
-    paddingHorizontal: 16,
-    paddingBottom: 10,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  headerRow: {
+  // Floating Top Navigation Bar
+  topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingBottom: 6,
   },
-  backButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: '#F8FAFC',
+  circleNavBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#EBE4D5',
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  cartIconButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: '#E7F8EE',
+  circleCartBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
     borderWidth: 1,
-    borderColor: '#C3EDD1',
+    borderColor: '#EBE4D5',
   },
 
   // Scroll Content
@@ -979,337 +1037,433 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 16,
-    paddingTop: 14,
+    paddingTop: 4,
     paddingBottom: 40,
   },
 
-  // 1. Profile Card
-  profileCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 22,
-    padding: 16,
-    marginBottom: 14,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  avatarSection: {
-    flexDirection: 'row',
+  // 1. Centered Profile Hero Section
+  heroSection: {
     alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 6,
+    marginBottom: 16,
+    position: 'relative',
   },
-  avatarCircle: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
+  ambientGlow: {
+    position: 'absolute',
+    top: -15,
+    width: 170,
+    height: 170,
+    borderRadius: 85,
+    backgroundColor: 'rgba(217, 119, 6, 0.08)',
+  },
+  centeredAvatarContainer: {
+    marginBottom: 12,
+  },
+  avatarCircleLarge: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     backgroundColor: '#159447',
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
-    marginRight: 14,
+    borderWidth: 3.5,
+    borderColor: '#FFFFFF',
     shadowColor: '#159447',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.28,
+    shadowRadius: 10,
+    elevation: 6,
   },
-  avatarInitial: {
-    fontSize: 26,
+  avatarImageLarge: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+  },
+  avatarInitialLarge: {
+    fontSize: 36,
     fontWeight: '900',
     color: '#FFFFFF',
   },
-  avatarImage: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-  },
-  editProfileBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#E7F8EE',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#C3EDD1',
-  },
-  irctcBadgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  disabledInput: {
-    backgroundColor: '#F8FAFC',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  disabledInputText: {
-    fontSize: 13.5,
-    color: '#64748B',
-    fontWeight: '500',
-  },
-  verifiedTick: {
+  verifiedTickLarge: {
     position: 'absolute',
-    bottom: -2,
-    right: -2,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    bottom: 1,
+    right: 1,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     backgroundColor: '#059669',
     borderWidth: 2,
     borderColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  identityCol: {
-    flex: 1,
-  },
-  nameRow: {
+  userNameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-    flexWrap: 'wrap',
+    justifyContent: 'center',
     gap: 6,
+    marginBottom: 3,
   },
-  userNameText: {
-    fontSize: 18,
+  accountHeading: {
+    fontSize: 22,
     fontWeight: '900',
     color: '#0F172A',
+    letterSpacing: -0.3,
+    textAlign: 'center',
+  },
+  miniEditBtn: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#E7F8EE',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#C3EDD1',
+  },
+  userPhoneSubtitle: {
+    fontSize: 13.5,
+    color: '#64748B',
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  irctcTagRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   irctcBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
+    gap: 4,
     backgroundColor: '#E7F8EE',
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 8,
+    paddingHorizontal: 9,
+    paddingVertical: 3.5,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#C3EDD1',
   },
   irctcBadgeText: {
-    fontSize: 10,
+    fontSize: 10.5,
     fontWeight: '800',
     color: '#159447',
   },
-  contactLine: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 2,
-  },
-  contactText: {
-    fontSize: 12,
-    color: '#64748B',
-    fontWeight: '500',
-  },
 
-  // 2. Highlight Action Boxes
-  highlightBoxesRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 20,
-  },
-  highlightBox: {
-    flex: 1,
-    borderRadius: 20,
-    padding: 14,
-    shadowColor: '#000000',
+  // 2. Banner Card (In-Berth Delivery Perk)
+  bannerCard: {
+    borderRadius: 18,
+    overflow: 'hidden',
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    shadowColor: '#D97706',
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 2,
-    borderWidth: 1.2,
   },
-  ordersBox: {
-    backgroundColor: '#FFFFFF',
-    borderColor: '#BBF7D0',
-  },
-  helpBox: {
-    backgroundColor: '#FFFFFF',
-    borderColor: '#BFDBFE',
-  },
-  highlightTopRow: {
+  bannerGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
-  highlightIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+  bannerLeft: {
+    flex: 1,
+    marginRight: 12,
+  },
+  bannerTitle: {
+    fontSize: 14.5,
+    fontWeight: '900',
+    color: '#92400E',
+    marginBottom: 3,
+  },
+  bannerActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  bannerActionText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#B45309',
+  },
+  bannerGraphicBox: {
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  liveOrderPill: {
-    flexDirection: 'row',
+  bannerIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(253, 230, 138, 0.7)',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#FEF3C7',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
-  },
-  livePulseDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#159447',
-  },
-  liveOrderPillText: {
-    fontSize: 10,
-    fontWeight: '900',
-    color: '#B45309',
-  },
-  ordersCountPill: {
-    backgroundColor: '#E7F8EE',
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 8,
-  },
-  ordersCountText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#159447',
-  },
-  helpOnlinePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#EFF6FF',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
-  },
-  helpOnlineText: {
-    fontSize: 10,
-    fontWeight: '900',
-    color: '#2563EB',
-  },
-  highlightTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#0F172A',
-    marginBottom: 3,
-  },
-  highlightSubtitle: {
-    fontSize: 11,
-    color: '#64748B',
-    lineHeight: 15,
-    marginBottom: 10,
-    minHeight: 30,
-  },
-  highlightActionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  highlightActionText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#159447',
+    justifyContent: 'center',
   },
 
-  // 3. Section: Your Information
-  sectionHeader: {
-    marginBottom: 10,
-  },
-  sectionTitle: {
-    fontSize: 11.5,
-    fontWeight: '800',
-    color: '#64748B',
-    letterSpacing: 0.8,
-  },
-  infoCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 14,
+  // 3. Three Quick Action Cards (1 row, 3 columns)
+  threeActionRow: {
     flexDirection: 'row',
+    gap: 10,
+    marginBottom: 14,
+  },
+  actionColumnCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 8,
     alignItems: 'center',
-    marginBottom: 10,
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#EBE4D5',
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 6,
     elevation: 2,
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
   },
-  signOutCard: {
-    borderColor: '#FEE2E2',
-    marginTop: 6,
-  },
-  infoCardIcon: {
+  actionIconBox: {
     width: 42,
     height: 42,
-    borderRadius: 13,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  actionCardTitle: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#0F172A',
+    textAlign: 'center',
+    marginBottom: 2,
+  },
+  actionCardSub: {
+    fontSize: 10.5,
+    color: '#64748B',
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  livePulsePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3.5,
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    marginTop: 2,
+  },
+  pulseDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: '#159447',
+  },
+  livePillText: {
+    fontSize: 9.5,
+    fontWeight: '900',
+    color: '#B45309',
+  },
+
+  // 4. Wide Action Card
+  wideStatusCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#EBE4D5',
+    marginBottom: 12,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  wideCardIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
   },
-  infoCardContent: {
+  wideCardTextCol: {
     flex: 1,
   },
-  infoCardTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  infoCardTitle: {
-    fontSize: 14.5,
+  wideCardTitle: {
+    fontSize: 13.5,
     fontWeight: '800',
     color: '#0F172A',
   },
-  countBadge: {
-    backgroundColor: '#E7F8EE',
-    paddingHorizontal: 7,
-    paddingVertical: 2.5,
+  wideCardSub: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 1,
+    fontWeight: '500',
+  },
+  versionPill: {
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 9,
+    paddingVertical: 4,
     borderRadius: 8,
   },
-  countBadgeText: {
-    fontSize: 10,
+  versionPillText: {
+    fontSize: 11,
     fontWeight: '800',
     color: '#159447',
   },
-  activeSeatPill: {
-    backgroundColor: '#FEF3C7',
-    paddingHorizontal: 7,
-    paddingVertical: 2.5,
-    borderRadius: 8,
+
+  // 5. Setting / Preference Rows
+  settingCardRow: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: '#EBE4D5',
+    marginBottom: 10,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
   },
-  activeSeatPillText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#D97706',
+  settingLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
-  infoCardSubtitle: {
+  settingLabel: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  settingRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  settingValueText: {
     fontSize: 11.5,
+    fontWeight: '800',
     color: '#64748B',
-    marginTop: 3,
+    letterSpacing: 0.5,
+  },
+  highlightPreferenceCard: {
+    backgroundColor: '#F0FDF4',
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1.5,
+    borderColor: '#159447',
+    marginBottom: 18,
+  },
+  newBadgePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#159447',
+    paddingHorizontal: 8,
+    paddingVertical: 3.5,
+    borderRadius: 6,
+  },
+  newBadgeText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
   },
 
-  // 4. Version Footer
+  // 6. Section: Your Information
+  yourInfoHeading: {
+    fontSize: 17,
+    fontWeight: '900',
+    color: '#0F172A',
+    letterSpacing: -0.2,
+    marginBottom: 10,
+    marginLeft: 2,
+  },
+  groupedInfoCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#EBE4D5',
+    overflow: 'hidden',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+    marginBottom: 16,
+  },
+  groupedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  groupedRowIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  groupedRowTextCol: {
+    flex: 1,
+    marginRight: 8,
+  },
+  groupedRowTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  groupedRowSub: {
+    fontSize: 11.5,
+    color: '#64748B',
+    marginTop: 2,
+    fontWeight: '500',
+  },
+  rowDivider: {
+    height: 1,
+    backgroundColor: '#F1EAD9',
+    marginLeft: 64,
+  },
+
+  // 7. Version Footer
   versionFooter: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 24,
-    paddingBottom: 20,
+    marginTop: 14,
+    paddingBottom: 24,
   },
   versionHeading: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '900',
     color: '#94A3B8',
     letterSpacing: 0.5,
   },
   versionNumber: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: '700',
     color: '#94A3B8',
-    marginTop: 3,
+    marginTop: 2,
   },
   versionSubText: {
     fontSize: 11,
@@ -1322,6 +1476,19 @@ const styles = StyleSheet.create({
     color: '#94A3B8',
     marginTop: 2,
     fontStyle: 'italic',
+  },
+
+  // Modal Text Input Helper Styles (used in Edit Profile & Seat modal)
+  disabledInput: {
+    backgroundColor: '#F8FAFC',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  disabledInputText: {
+    fontSize: 13.5,
+    color: '#64748B',
+    fontWeight: '500',
   },
 
   // Modal Styles

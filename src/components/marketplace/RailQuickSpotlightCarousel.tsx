@@ -277,13 +277,13 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#0F172A',
+    color: '#342D29',
     letterSpacing: -0.2,
   },
   flashOffersBadge: {
-    backgroundColor: '#FFF1F2',
+    backgroundColor: '#FDE8DC',
     borderWidth: 1,
-    borderColor: '#FDA4AF',
+    borderColor: '#EFC1A8',
     borderRadius: 8,
     paddingHorizontal: 9,
     paddingVertical: 3.5,
@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
   flashOffersText: {
     fontSize: 10.5,
     fontWeight: '800',
-    color: '#E11D48',
+    color: '#C2410C',
     letterSpacing: 0.5,
   },
   scrollContent: {
@@ -301,12 +301,14 @@ const styles = StyleSheet.create({
   cardContainer: {
     width: 300,
     borderRadius: 22,
-    shadowColor: '#000000',
+    shadowColor: '#8C3D1E',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.14,
+    shadowOpacity: 0.12,
     shadowRadius: 10,
     elevation: 4,
-    backgroundColor: '#1E293B',
+    backgroundColor: '#FDE4D4',
+    borderWidth: 1,
+    borderColor: '#EFC1A8',
   },
   cardInner: {
     borderRadius: 22,

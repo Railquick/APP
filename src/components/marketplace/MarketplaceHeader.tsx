@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Modal,
+  Dimensions,
   Platform,
 } from 'react-native';
 import { Image } from 'expo-image';
@@ -23,8 +24,11 @@ import {
   Mic,
   Zap,
   User,
+  ShoppingBag,
+  ShoppingBasket,
   ChevronDown,
   LayoutGrid,
+  Headphones,
   Smartphone,
   Sparkles,
   HandMetal,
@@ -32,20 +36,73 @@ import {
   Moon,
   Luggage,
   Cross,
+  Gift,
   Lock,
   Train,
   X,
   Check,
   MapPin,
   ShieldCheck,
+  ArrowRight,
 } from 'lucide-react-native';
 import RailQuickLogoSvg from '../../assets/svg/RailQuickLogoSvg';
 import {
   JOURNEY_DETAILS,
   CATEGORIES,
+  PRODUCTS,
+  ProductItem,
 } from '../../data/marketplaceData';
 import { useJourney } from '../../context/JourneyContext';
 import { useAuth } from '../../context/AuthContext';
+import { useCart } from '../../context/CartContext';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+interface HeaderCollectionCard {
+  id: string;
+  title: string;
+  productId: string;
+  image: any;
+}
+
+const HEADER_COLLECTION_CARDS: HeaderCollectionCard[] = [
+  {
+    id: 'hcard-sister',
+    title: 'Gifts for Sister',
+    productId: 'prod-pads',
+    image: require('../../assets/cards_blinkit/card_sister.png'),
+  },
+  {
+    id: 'hcard-brother',
+    title: 'Gifts for Brother',
+    productId: 'prod-earphones',
+    image: require('../../assets/cards_blinkit/card_brother.png'),
+  },
+  {
+    id: 'hcard-kids',
+    title: 'Gifts for Kids',
+    productId: 'prod-babywipes',
+    image: require('../../assets/cards_blinkit/card_kids.png'),
+  },
+  {
+    id: 'hcard-sweets',
+    title: 'Indian Sweets',
+    productId: 'prod-silk',
+    image: require('../../assets/cards_blinkit/card_sweets.png'),
+  },
+  {
+    id: 'hcard-dryfruits',
+    title: 'Dry Fruits',
+    productId: 'prod-granola',
+    image: require('../../assets/cards_blinkit/card_dryfruits.png'),
+  },
+  {
+    id: 'hcard-chocolates',
+    title: 'Chocolates & Hampers',
+    productId: 'prod-coke',
+    image: require('../../assets/cards_blinkit/card_chocolates.png'),
+  },
+];
 
 const SEARCH_SUGGESTIONS = [
   'USB-C fast cable',
@@ -64,6 +121,8 @@ interface MarketplaceHeaderProps {
   onSearchPress?: () => void;
   onProfilePress?: () => void;
   onJourneyDetailsPress?: () => void;
+  onCartPress?: () => void;
+  onProductPress?: (product: ProductItem) => void;
 }
 
 export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
@@ -72,9 +131,24 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
   onSearchPress,
   onProfilePress,
   onJourneyDetailsPress,
+  onCartPress,
+  onProductPress,
 }) => {
   const insets = useSafeAreaInsets();
   const [isJourneyModalVisible, setIsJourneyModalVisible] = useState(false);
+
+  // Cart item count & total price
+  let cartCount = 0;
+  let cartTotal = 0;
+  try {
+    const cartCtx = useCart();
+    if (cartCtx?.totalCount) {
+      cartCount = cartCtx.totalCount;
+      cartTotal = cartCtx.totalPrice || 0;
+    }
+  } catch {
+    // Fallback
+  }
 
   // Dynamic journey context with fallback
   let journey = JOURNEY_DETAILS;
@@ -111,9 +185,8 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
       if (typedText.length < currentWord.length) {
         timeout = setTimeout(() => {
           setTypedText(currentWord.slice(0, typedText.length + 1));
-        }, 70); // Natural character typing cadence
+        }, 70);
       } else {
-        // Full term displayed: pause so user can comfortably read it
         timeout = setTimeout(() => {
           setIsDeleting(true);
         }, 1700);
@@ -122,7 +195,7 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
       if (typedText.length > 0) {
         timeout = setTimeout(() => {
           setTypedText(currentWord.slice(0, typedText.length - 1));
-        }, 30); // Fast deletion
+        }, 30);
       } else {
         timeout = setTimeout(() => {
           setIsDeleting(false);
@@ -156,60 +229,87 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
     onJourneyDetailsPress?.();
   };
 
-  const renderCategoryIcon = (id: string, isSelected: boolean, accentColor?: string) => {
-    const size = 16;
-    const color = isSelected ? '#FFFFFF' : accentColor || '#475569';
-    switch (id) {
+  // Category Icon mapper matching Reference Image 2's clean minimalist outline style
+  const renderNavIcon = (catId: string, isSelected: boolean) => {
+    const size = 22;
+    const color = isSelected ? '#342D29' : '#79665B';
+    const strokeWidth = isSelected ? 2.3 : 1.9;
+
+    switch (catId) {
       case 'all':
-        return <LayoutGrid size={size} color={color} strokeWidth={isSelected ? 2.4 : 1.9} />;
+        return <ShoppingBasket size={size} color={color} strokeWidth={strokeWidth} />;
       case 'mobile':
-        return <Smartphone size={size} color={color} strokeWidth={isSelected ? 2.4 : 1.9} />;
+        return <Headphones size={size} color={color} strokeWidth={strokeWidth} />;
       case 'women-hygiene':
-        return <Sparkles size={size} color={color} strokeWidth={isSelected ? 2.4 : 1.9} />;
+        return <Sparkles size={size} color={color} strokeWidth={strokeWidth} />;
       case 'personal-hygiene':
-        return <HandMetal size={size} color={color} strokeWidth={isSelected ? 2.4 : 1.9} />;
-      case 'baby':
-        return <Baby size={size} color={color} strokeWidth={isSelected ? 2.4 : 1.9} />;
-      case 'sleep-comfort':
-        return <Moon size={size} color={color} strokeWidth={isSelected ? 2.4 : 1.9} />;
+        return <HandMetal size={size} color={color} strokeWidth={strokeWidth} />;
       case 'travel-essentials':
-        return <Luggage size={size} color={color} strokeWidth={isSelected ? 2.4 : 1.9} />;
+        return <Gift size={size} color={color} strokeWidth={strokeWidth} />;
       case 'first-aid':
-        return <Cross size={size} color={color} strokeWidth={isSelected ? 2.4 : 1.9} />;
+        return <Cross size={size} color={color} strokeWidth={strokeWidth} />;
+      case 'sleep-comfort':
+        return <Moon size={size} color={color} strokeWidth={strokeWidth} />;
+      case 'baby':
+        return <Baby size={size} color={color} strokeWidth={strokeWidth} />;
       case 'travel-accessories':
-        return <Lock size={size} color={color} strokeWidth={isSelected ? 2.4 : 1.9} />;
+        return <Lock size={size} color={color} strokeWidth={strokeWidth} />;
       default:
-        return <LayoutGrid size={size} color={color} strokeWidth={isSelected ? 2.4 : 1.9} />;
+        return <ShoppingBag size={size} color={color} strokeWidth={strokeWidth} />;
     }
   };
 
   return (
-    <View style={[styles.headerContainer, { paddingTop: Math.max(insets.top, 10) }]}>
-      {/* UPPER PART BACKGROUND IMAGE (Golden Mandala Pattern) */}
-      <Image
-        source={require('../../assets/images/upper.jpg')}
+    <View style={[styles.headerContainer, { paddingTop: Math.max(insets.top, 8) }]}>
+      {/* SEAMLESS WARM APRICOT-PEACH GRADIENT (EXACTLY MATCHING BANNER THEME) */}
+      <LinearGradient
+        colors={['#FED8C5', '#FFDDC4', '#FFE2C2', '#FFF0E2']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
         style={[StyleSheet.absoluteFill, styles.headerBgImage]}
-        contentFit="cover"
       />
 
-      {/* ================= ROW A: LOGO, SPEED BADGE & PROFILE ================= */}
+      {/* ================= 1. TOP HEADER SECTION (MATCHING BLINKIT IN REFERENCE IMAGE 2) ================= */}
       <View style={styles.topBarRow}>
-        <RailQuickLogoSvg width={96} height={26} />
+        {/* Left: Brand name, Train name with Surge/Delivery badge, Coach & Seat */}
+        <TouchableOpacity
+          activeOpacity={0.78}
+          onPress={handleOpenJourneyModal}
+          style={styles.trainSeatDirect}
+        >
+          {/* Small Brand Label */}
+          <Text style={styles.brandSmallText}>RailQuick.in</Text>
 
+          {/* Large Bold Title Row with Delivery Badge & Chevron */}
+          <View style={styles.trainTitleRow}>
+            <Text style={styles.trainTitleBold} numberOfLines={1}>
+              {journey.trainName.includes('•')
+                ? journey.trainName.split('•')[1].trim()
+                : journey.trainName}
+            </Text>
+            <ChevronDown size={18} color="#342D29" strokeWidth={2.6} style={styles.chevronInline} />
+
+            {/* In-Berth Delivery Badge (Matches Blinkit's Surge Applicable pill) */}
+            <View style={styles.deliveryBadge}>
+              <View style={styles.deliveryBadgeDot} />
+              <Text style={styles.deliveryBadgeText}>In-Berth Drop</Text>
+            </View>
+          </View>
+
+          {/* Location / Berth line: e.g. Coach B2 / Seat 36 (LB) ▾ */}
+          <View style={styles.seatRow}>
+            <Text style={styles.seatDetailsSmall} numberOfLines={1}>
+              Coach {journey.coach} / Seat {journey.berth} ({journey.berthType.includes('Lower') ? 'LB' : journey.berthType.includes('Upper') ? 'UB' : 'MB'})
+            </Text>
+            <ChevronDown size={14} color="#79665B" strokeWidth={2.2} />
+          </View>
+        </TouchableOpacity>
+
+        {/* Right Controls: Profile Avatar (Cart box removed as requested) */}
         <View style={styles.topRightControls}>
-          <LinearGradient
-            colors={['#059669', '#159447', '#16A34A']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.deliveryBadge}
-          >
-            <Zap size={12} color="#FFFFFF" fill="#FFFFFF" />
-            <Text style={styles.deliveryTimeText}>{journey.deliveryMinutes} MINS</Text>
-          </LinearGradient>
-
           <TouchableOpacity
             style={styles.profileButton}
-            activeOpacity={0.8}
+            activeOpacity={0.82}
             onPress={onProfilePress}
           >
             {user?.avatarUrl ? (
@@ -223,45 +323,23 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
                 {user.name.charAt(0).toUpperCase()}
               </Text>
             ) : (
-              <User size={18} color="#08763A" />
+              <User size={18} color="#342D29" strokeWidth={2.3} />
             )}
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* ================= LINE 2: TRAIN NAME & SEAT (NO CONTAINER, TRANSPARENT BG - EXACT USER REFERENCE) ================= */}
-      <View style={styles.trainSeatRow}>
-        <TouchableOpacity
-          activeOpacity={0.75}
-          onPress={handleOpenJourneyModal}
-          style={styles.trainSeatDirect}
-        >
-          {/* Large Bold Train Name with subtle down chevron */}
-          <View style={styles.trainTitleRow}>
-            <Text style={styles.trainTitleBold} numberOfLines={1}>
-              {journey.trainName.includes('•')
-                ? journey.trainName.split('•')[1].trim()
-                : journey.trainName}
-            </Text>
-            <ChevronDown size={18} color="#0F172A" strokeWidth={2.6} style={styles.chevronInline} />
-          </View>
-
-          {/* Smaller coach and seat text */}
-          <Text style={styles.seatDetailsSmall} numberOfLines={1}>
-            Coach {journey.coach} / Seat {journey.berth} ({journey.berthType.includes('Lower') ? 'LB' : journey.berthType.includes('Upper') ? 'UB' : 'MB'})
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* ================= ROW B: BIGGER & WHITER SEARCH BAR (NO SCANNER, WITH TYPEWRITER ANIMATION) ================= */}
-      <View style={styles.rowB}>
+      {/* ================= 2. SEARCH BAR SECTION (PROMINENT WHITE ROUNDED BAR) ================= */}
+      <View style={styles.searchSectionRow}>
         <TouchableOpacity
           activeOpacity={0.92}
           style={styles.searchBar}
           onPress={onSearchPress}
         >
-          <Search size={20} color="#159447" style={styles.searchIcon} strokeWidth={2.4} />
+          {/* Dark Charcoal / Brown Search Icon */}
+          <Search size={20} color="#342D29" style={styles.searchIcon} strokeWidth={2.4} />
 
+          {/* Typewriter animated query */}
           <View style={styles.searchContent}>
             <Text style={styles.searchPlaceholderPrefix}>Search </Text>
             <Text style={styles.searchPlaceholderQuery} numberOfLines={1}>
@@ -270,73 +348,62 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
             <Animated.View style={[styles.cursor, cursorStyle]} />
           </View>
 
-          {/* Voice Search Mic Button only (Scanner removed as requested) */}
+          {/* Audio Visualizer Equalizer / Mic Container on right (Matches Reference Image 2) */}
           <TouchableOpacity
-            activeOpacity={0.7}
+            activeOpacity={0.75}
             onPress={onSearchPress}
-            style={styles.micButton}
+            style={styles.soundWaveContainer}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Mic size={19} color="#159447" />
+            <View style={styles.equalizerBarsRow}>
+              <View style={[styles.eqBar, { height: 10 }]} />
+              <View style={[styles.eqBar, { height: 16 }]} />
+              <View style={[styles.eqBar, { height: 20 }]} />
+              <View style={[styles.eqBar, { height: 13 }]} />
+              <View style={[styles.eqBar, { height: 8 }]} />
+            </View>
           </TouchableOpacity>
         </TouchableOpacity>
       </View>
 
-      {/* ================= ROW C: MODERN HORIZONTALLY SCROLLABLE CATEGORY CARDS ================= */}
-      {/* Background set to transparent to match page background without discordant stripe */}
-      <View style={styles.rowC}>
+      {/* ================= 3. CATEGORY NAVIGATION (HORIZONTAL ICON + TEXT ROW MATCHING IMAGE 2) ================= */}
+      <View style={styles.categoryNavSection}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoryScrollContent}
+          contentContainerStyle={styles.categoryNavContent}
         >
           {CATEGORIES.map((cat) => {
             const isSelected = selectedCategory === cat.id;
-            const isNew = cat.id === 'women-hygiene';
 
             return (
               <TouchableOpacity
                 key={cat.id}
-                activeOpacity={0.8}
+                activeOpacity={0.75}
                 onPress={() => onSelectCategory(cat.id)}
-                style={[
-                  styles.categoryCard,
-                  isSelected
-                    ? styles.categoryCardSelected
-                    : styles.categoryCardUnselected,
-                ]}
+                style={styles.categoryNavItem}
               >
-                {/* Category Icon */}
-                {renderCategoryIcon(cat.id, isSelected, cat.accentColor)}
+                {/* Minimalist Outlined Icon */}
+                <View style={styles.categoryIconWrap}>
+                  {renderNavIcon(cat.id, isSelected)}
+                </View>
 
-                {/* Category Name */}
+                {/* Category Label */}
                 <Text
                   style={[
-                    styles.categoryCardText,
-                    isSelected && styles.categoryCardTextSelected,
+                    styles.categoryNavLabel,
+                    isSelected && styles.categoryNavLabelActive,
                   ]}
                   numberOfLines={1}
                 >
                   {cat.name}
                 </Text>
 
-                {/* Optional "New" Badge */}
-                {isNew && (
-                  <View
-                    style={[
-                      styles.newBadgeInline,
-                      isSelected && styles.newBadgeInlineSelected,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.newBadgeText,
-                        isSelected && styles.newBadgeTextSelected,
-                      ]}
-                    >
-                      New
-                    </Text>
-                  </View>
+                {/* Subtle Active Indicator Underline (Matches Blinkit Underline in Image 2) */}
+                {isSelected ? (
+                  <View style={styles.categoryActiveUnderline} />
+                ) : (
+                  <View style={styles.categoryUnderlineSpacer} />
                 )}
               </TouchableOpacity>
             );
@@ -365,7 +432,7 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
             <View style={styles.modalHeader}>
               <View style={styles.modalHeaderLeft}>
                 <View style={styles.modalTrainIcon}>
-                  <Train size={18} color="#159447" strokeWidth={2.4} />
+                  <Train size={18} color="#0F6C38" strokeWidth={2.4} />
                 </View>
                 <View>
                   <Text style={styles.modalTitle}>Journey & Berth Details</Text>
@@ -374,79 +441,71 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
               </View>
 
               <TouchableOpacity
-                onPress={() => setIsJourneyModalVisible(false)}
                 style={styles.modalCloseBtn}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                onPress={() => setIsJourneyModalVisible(false)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <X size={18} color="#64748B" />
+                <X size={18} color="#342D29" />
               </TouchableOpacity>
             </View>
 
             {/* PNR Banner */}
             <View style={styles.modalPnrBanner}>
               <View>
-                <Text style={styles.modalFieldLabel}>PNR / TICKET NUMBER</Text>
-                <Text style={styles.modalPnrValue}>{journey.pnr}</Text>
+                <Text style={styles.pnrBannerLabel}>BOOKING PNR</Text>
+                <Text style={styles.pnrBannerVal}>{journey.pnr}</Text>
               </View>
-              <View style={styles.modalVerifiedBadge}>
-                <Check size={11} color="#059669" strokeWidth={3} />
-                <Text style={styles.modalVerifiedText}>VERIFIED</Text>
-              </View>
-            </View>
-
-            {/* Journey Items List */}
-            <View style={styles.modalItemsContainer}>
-              {/* Train Name & Number */}
-              <View style={styles.modalItemRow}>
-                <View style={styles.modalItemIconCol}>
-                  <Train size={16} color="#08763A" />
-                </View>
-                <View style={styles.modalItemTextCol}>
-                  <Text style={styles.modalFieldLabel}>TRAIN</Text>
-                  <Text style={styles.modalFieldValue}>{journey.trainName}</Text>
-                </View>
-              </View>
-
-              {/* Station & Platform */}
-              <View style={styles.modalItemRow}>
-                <View style={styles.modalItemIconCol}>
-                  <MapPin size={16} color="#D97706" />
-                </View>
-                <View style={styles.modalItemTextCol}>
-                  <Text style={styles.modalFieldLabel}>NEXT STATION HALT</Text>
-                  <Text style={styles.modalFieldValue}>
-                    {journey.station} • {journey.platform}
-                  </Text>
-                  <Text style={styles.modalFieldSub}>
-                    Arrival in {journey.scheduledArrivalMins} mins • {journey.haltMinutes} mins train halt
-                  </Text>
-                </View>
-              </View>
-
-              {/* Coach & Berth */}
-              <View style={styles.modalItemRow}>
-                <View style={styles.modalItemIconCol}>
-                  <ShieldCheck size={16} color="#2563EB" />
-                </View>
-                <View style={styles.modalItemTextCol}>
-                  <Text style={styles.modalFieldLabel}>ALLOCATED SEAT / BERTH</Text>
-                  <Text style={styles.modalFieldValue}>
-                    Coach {journey.coach} • Berth {journey.berth}
-                  </Text>
-                  <Text style={styles.modalFieldSub}>{journey.berthType}</Text>
-                </View>
+              <View style={styles.pnrStatusPill}>
+                <Check size={12} color="#0F6C38" strokeWidth={3} />
+                <Text style={styles.pnrStatusText}>CONFIRMED</Text>
               </View>
             </View>
 
-            {/* Runner Guarantee Note */}
+            {/* Train & Berth Grid */}
+            <View style={styles.modalInfoGrid}>
+              <View style={styles.modalInfoCell}>
+                <Text style={styles.modalCellLabel}>TRAIN</Text>
+                <Text style={styles.modalCellVal} numberOfLines={1}>
+                  {journey.trainName}
+                </Text>
+              </View>
+
+              <View style={styles.modalInfoCell}>
+                <Text style={styles.modalCellLabel}>COACH & BERTH</Text>
+                <Text style={styles.modalCellVal}>
+                  Coach {journey.coach} • Seat {journey.berth}
+                </Text>
+                <Text style={styles.modalCellSub}>{journey.berthType}</Text>
+              </View>
+
+              <View style={styles.modalInfoCell}>
+                <Text style={styles.modalCellLabel}>PASSENGER</Text>
+                <Text style={styles.modalCellVal}>
+                  {user?.name || journey.passengerName}
+                </Text>
+                <Text style={styles.modalCellSub}>
+                  {user?.phone || journey.passengerPhone}
+                </Text>
+              </View>
+
+              <View style={styles.modalInfoCell}>
+                <Text style={styles.modalCellLabel}>NEXT HALT</Text>
+                <Text style={styles.modalCellVal}>{journey.station}</Text>
+                <Text style={styles.modalCellSub}>
+                  Halt Window: {journey.haltMinutes} minutes
+                </Text>
+              </View>
+            </View>
+
+            {/* Delivery Guarantee Notice */}
             <View style={styles.modalGuaranteeBox}>
-              <Zap size={14} color="#159447" fill="#159447" />
+              <ShieldCheck size={16} color="#0F6C38" />
               <Text style={styles.modalGuaranteeText}>
                 RailQuick delivery runner arrives directly at your coach door within the first 5 minutes of train halt.
               </Text>
             </View>
 
-            {/* Close / Action Button */}
+            {/* Close Button */}
             <TouchableOpacity
               activeOpacity={0.85}
               style={styles.modalCloseButton}
@@ -461,137 +520,197 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
   );
 };
 
+// Calculate 3-column card dimensions
+const HORIZONTAL_PADDING = 14;
+const CARD_GAP = 10;
+const THREE_COL_WIDTH = (SCREEN_WIDTH - HORIZONTAL_PADDING * 2 - CARD_GAP * 2) / 3;
+
 const styles = StyleSheet.create({
   headerContainer: {
-    backgroundColor: '#FAF5EA',
+    backgroundColor: '#FED8C5',
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(230, 218, 192, 0.7)',
-    shadowColor: '#261805',
-    shadowOffset: { width: 0, height: 7 },
-    shadowOpacity: 0.11,
-    shadowRadius: 16,
-    elevation: 6,
+    borderBottomColor: '#F5BEA4',
+    shadowColor: '#8C3D1E',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    elevation: 4,
     zIndex: 50,
     overflow: 'hidden',
+    paddingBottom: 4,
   },
   headerBgImage: {
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
   },
-  // ---- Row A Line 1: Top bar (Brand, 5 MINS & Profile) ----
+
+  // ---- 1. Top Bar: Train / Seat (Left) + Wallet / Profile (Right) ----
   topBarRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 14,
-    paddingTop: 4,
+    paddingHorizontal: HORIZONTAL_PADDING,
+    paddingTop: 2,
     paddingBottom: 6,
   },
-  topRightControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  deliveryBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 18,
-    shadowColor: '#159447',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  deliveryTimeText: {
-    color: '#FFFFFF',
-    fontSize: 12.5,
-    fontWeight: '800',
-    letterSpacing: 0.3,
-  },
-  profileButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1.5,
-    borderColor: '#86EFAC',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 3,
-    elevation: 1,
-    overflow: 'hidden',
-  },
-  headerAvatarImg: {
-    width: 33,
-    height: 33,
-    borderRadius: 16.5,
-  },
-  headerAvatarInitial: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#08763A',
-  },
-
-  // ---- Line 2: Train & Seat Row (Transparent, No Container, Exactly as User Reference) ----
-  trainSeatRow: {
-    paddingHorizontal: 14,
-    paddingTop: 2,
-    paddingBottom: 9,
-    backgroundColor: 'transparent',
-  },
   trainSeatDirect: {
+    flex: 1,
     backgroundColor: 'transparent',
-    alignSelf: 'flex-start',
+    paddingRight: 8,
+  },
+  brandSmallText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#342D29',
+    letterSpacing: 0.1,
+    marginBottom: 1,
   },
   trainTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 5,
   },
   trainTitleBold: {
     fontSize: 20,
     fontWeight: '900',
-    color: '#0F172A',
+    color: '#342D29',
     letterSpacing: -0.4,
   },
   chevronInline: {
     marginTop: 2,
   },
+  deliveryBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#E7F8EE',
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 10,
+    marginLeft: 4,
+  },
+  deliveryBadgeDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: '#0F6C38',
+  },
+  deliveryBadgeText: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: '#0F6C38',
+    letterSpacing: 0.1,
+  },
+  seatRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    marginTop: 2,
+  },
   seatDetailsSmall: {
     fontSize: 12.5,
     fontWeight: '600',
-    color: '#475569',
-    marginTop: 2,
+    color: '#79665B',
     letterSpacing: 0.1,
   },
 
-  // ---- Row B: Bigger & Whiter Search Bar ----
-  rowB: {
-    paddingHorizontal: 14,
+  // Right Controls
+  topRightControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  cartPillButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.2,
+    borderColor: '#EFC1A8',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    height: 38,
+    gap: 5,
+    shadowColor: '#8C3D1E',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+    position: 'relative',
+  },
+  cartPillText: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#342D29',
+  },
+  cartCountDot: {
+    position: 'absolute',
+    top: -3,
+    right: -3,
+    backgroundColor: '#0F6C38',
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    paddingHorizontal: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+  },
+  cartCountDotText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '900',
+  },
+  profileButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.2,
+    borderColor: '#EFC1A8',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#8C3D1E',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+    overflow: 'hidden',
+  },
+  headerAvatarImg: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+  },
+  headerAvatarInitial: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#0F6C38',
+  },
+
+  // ---- 2. Search Section: Prominent White Rounded Bar ----
+  searchSectionRow: {
+    paddingHorizontal: HORIZONTAL_PADDING,
+    paddingTop: 6,
     paddingBottom: 6,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderWidth: 1.2,
-    borderColor: '#E2E8F0',
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    height: 48,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 2,
+    borderRadius: 18,
+    paddingLeft: 14,
+    paddingRight: 6,
+    height: 50,
+    shadowColor: '#8C3D1E',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2.5,
   },
   searchIcon: {
     marginRight: 9,
@@ -602,122 +721,143 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   searchPlaceholderPrefix: {
-    fontSize: 13.5,
-    color: '#94A3B8',
+    fontSize: 14,
+    color: '#79665B',
     fontWeight: '500',
   },
   searchPlaceholderQuery: {
-    fontSize: 13.5,
-    color: '#0F172A',
+    fontSize: 14,
+    color: '#342D29',
     fontWeight: '700',
   },
   cursor: {
     width: 2,
-    height: 15,
-    backgroundColor: '#159447',
+    height: 16,
+    backgroundColor: '#0F6C38',
     marginLeft: 3,
   },
-  micButton: {
-    padding: 6,
+  soundWaveContainer: {
+    width: 38,
+    height: 38,
     borderRadius: 12,
-    backgroundColor: '#E7F8EE',
-  },
-
-  // ---- Row C: Category Horizontal Cards ----
-  rowC: {
-    backgroundColor: 'transparent',
-    borderTopWidth: 0,
-    borderBottomWidth: 0,
-    paddingTop: 3,
-    paddingBottom: 15,
-  },
-  categoryScrollContent: {
-    paddingHorizontal: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  categoryCard: {
-    flexDirection: 'row',
+    backgroundColor: '#F0FDF4',
+    borderWidth: 1,
+    borderColor: '#DCFCE7',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 40,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    gap: 7,
   },
-  categoryCardUnselected: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderWidth: 1,
-    borderColor: '#E8E1D3',
-    shadowColor: '#302008',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 2,
+  equalizerBarsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2.5,
   },
-  categoryCardSelected: {
-    backgroundColor: '#159447',
-    borderWidth: 1,
-    borderColor: '#0E7837',
-    shadowColor: '#159447',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 3.5,
-  },
-  categoryCardText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#1E293B',
-    letterSpacing: -0.2,
-  },
-  categoryCardTextSelected: {
-    color: '#FFFFFF',
-    fontWeight: '800',
-  },
-  newBadgeInline: {
-    backgroundColor: '#FFF1F2',
-    borderWidth: 1,
-    borderColor: '#FECDD3',
-    borderRadius: 8,
-    paddingHorizontal: 6,
-    paddingVertical: 1.5,
-    marginLeft: 2,
-  },
-  newBadgeInlineSelected: {
-    backgroundColor: '#FFFFFF',
-    borderColor: '#FFFFFF',
-  },
-  newBadgeText: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: '#E11D48',
-    letterSpacing: 0.2,
-  },
-  newBadgeTextSelected: {
-    color: '#159447',
+  eqBar: {
+    width: 2.4,
+    borderRadius: 1.5,
+    backgroundColor: '#0F6C38',
   },
 
-  // ---- Journey Popup Modal ----
+  // ---- 3. Category Navigation (Clean Minimalist Outlines + Names Underneath) ----
+  categoryNavSection: {
+    paddingTop: 6,
+    paddingBottom: 4,
+  },
+  categoryNavContent: {
+    paddingHorizontal: HORIZONTAL_PADDING,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 20,
+  },
+  categoryNavItem: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 4,
+  },
+  categoryIconWrap: {
+    width: 34,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  categoryNavLabel: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#342D29',
+    letterSpacing: -0.1,
+    marginTop: 2,
+  },
+  categoryNavLabelActive: {
+    color: '#342D29',
+    fontWeight: '800',
+  },
+  categoryActiveUnderline: {
+    width: 22,
+    height: 3.5,
+    borderRadius: 2,
+    backgroundColor: '#342D29',
+    marginTop: 4,
+  },
+  categoryUnderlineSpacer: {
+    width: 22,
+    height: 3.5,
+    marginTop: 4,
+  },
+
+  // ---- 4. Edge-to-Edge Promotional Banner (No Box, From One Edge To Another) ----
+  edgeBannerContainer: {
+    width: '100%',
+    marginVertical: 8,
+    backgroundColor: 'transparent',
+  },
+  edgeBannerImage: {
+    width: '100%',
+    aspectRatio: 1024 / 224,
+  },
+
+  // ---- 5. The 6 Category Cards (Core 3-Column Grid) ----
+  sixCardsSection: {
+    paddingHorizontal: HORIZONTAL_PADDING,
+    paddingTop: 2,
+  },
+  sixCardsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: CARD_GAP,
+    justifyContent: 'space-between',
+  },
+  sixCardContainer: {
+    width: THREE_COL_WIDTH,
+    height: THREE_COL_WIDTH * 1.04,
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: '#8C3D1E',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
+    backgroundColor: '#F5B69F',
+  },
+  sixCardFullImage: {
+    width: '100%',
+    height: '100%',
+  },
+
+  scrollableHeroContainer: {
+    paddingTop: 4,
+    paddingBottom: 6,
+  },
+  // Modal Styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.52)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    justifyContent: 'flex-end',
   },
   modalCard: {
-    width: '100%',
-    maxWidth: 380,
     backgroundColor: '#FFFFFF',
-    borderRadius: 22,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     padding: 20,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 20,
-    elevation: 10,
+    maxHeight: '85%',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -733,133 +873,165 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   modalTrainIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     backgroundColor: '#E7F8EE',
     alignItems: 'center',
     justifyContent: 'center',
   },
   modalTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '800',
-    color: '#0F172A',
+    color: '#342D29',
   },
   modalSub: {
-    fontSize: 11,
-    color: '#64748B',
+    fontSize: 11.5,
+    color: '#79665B',
     marginTop: 1,
   },
   modalCloseBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#F8FAFC',
-    alignItems: 'center',
-    justifyContent: 'center',
+    padding: 6,
   },
   modalPnrBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+    backgroundColor: '#FDEEE2',
+    padding: 12,
     borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
     marginTop: 14,
-    marginBottom: 14,
   },
-  modalFieldLabel: {
-    fontSize: 9.5,
+  pnrBannerLabel: {
+    fontSize: 10,
     fontWeight: '800',
-    color: '#64748B',
-    letterSpacing: 0.6,
-    marginBottom: 2,
+    color: '#C2410C',
+    letterSpacing: 0.5,
   },
-  modalPnrValue: {
-    fontSize: 14.5,
-    fontWeight: '800',
-    color: '#0F172A',
-    letterSpacing: 0.8,
+  pnrBannerVal: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: '#342D29',
+    marginTop: 1,
   },
-  modalVerifiedBadge: {
+  pnrStatusPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#E7F8EE',
-    borderWidth: 1,
-    borderColor: '#86EFAC',
-    borderRadius: 8,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
   },
-  modalVerifiedText: {
-    fontSize: 9.5,
-    fontWeight: '800',
-    color: '#059669',
-    letterSpacing: 0.3,
+  pnrStatusText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#0F6C38',
   },
-  modalItemsContainer: {
+  modalInfoGrid: {
+    marginTop: 14,
     gap: 12,
-    marginBottom: 16,
   },
-  modalItemRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-  },
-  modalItemIconCol: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
+  modalInfoCell: {
     backgroundColor: '#F8FAFC',
-    alignItems: 'center',
-    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 12,
+  },
+  modalCellLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#94A3B8',
+    letterSpacing: 0.5,
+  },
+  modalCellVal: {
+    fontSize: 13.5,
+    fontWeight: '800',
+    color: '#342D29',
     marginTop: 2,
   },
-  modalItemTextCol: {
-    flex: 1,
-  },
-  modalFieldValue: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#0F172A',
-  },
-  modalFieldSub: {
-    fontSize: 11,
-    color: '#64748B',
+  modalCellSub: {
+    fontSize: 11.5,
+    color: '#79665B',
     marginTop: 1,
   },
   modalGuaranteeBox: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#E7F8EE',
+    backgroundColor: '#F0FDF4',
+    padding: 12,
     borderRadius: 12,
-    padding: 10,
-    marginBottom: 16,
+    marginTop: 14,
   },
   modalGuaranteeText: {
-    fontSize: 11,
-    color: '#08763A',
-    fontWeight: '600',
     flex: 1,
-    lineHeight: 15,
+    fontSize: 11.5,
+    color: '#166534',
+    lineHeight: 16,
   },
   modalCloseButton: {
-    backgroundColor: '#159447',
+    backgroundColor: '#342D29',
     borderRadius: 14,
-    paddingVertical: 12,
+    paddingVertical: 13,
     alignItems: 'center',
-    justifyContent: 'center',
+    marginTop: 16,
   },
   modalCloseButtonText: {
+    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '800',
-    color: '#FFFFFF',
   },
 });
+
+
+// ================= SCROLLABLE BANNER & 6 CATEGORY CARDS (SCROLLS UPWARD IN SCROLLVIEW) =================
+export interface MarketplaceHeaderScrollableProps {
+  onProductPress?: (product: ProductItem) => void;
+}
+
+export const MarketplaceHeaderScrollable: React.FC<MarketplaceHeaderScrollableProps> = ({
+  onProductPress,
+}) => {
+  return (
+    <View style={styles.scrollableHeroContainer}>
+      {/* 1. Edge-to-Edge Station-to-Train Promotional Banner */}
+      <View style={styles.edgeBannerContainer}>
+        <Image
+          source={require('../../assets/images/station_to_train_banner.jpg')}
+          style={styles.edgeBannerImage}
+          contentFit="cover"
+        />
+      </View>
+
+      {/* 2. The 6 Category Cards (3-Column Grid) */}
+      <View style={styles.sixCardsSection}>
+        <View style={styles.sixCardsGrid}>
+          {HEADER_COLLECTION_CARDS.map((card) => {
+            const product = PRODUCTS.find((p) => p.id === card.productId);
+
+            return (
+              <TouchableOpacity
+                key={card.id}
+                activeOpacity={0.88}
+                onPress={() => {
+                  if (product) {
+                    onProductPress?.(product);
+                  }
+                }}
+                style={styles.sixCardContainer}
+              >
+                <Image
+                  source={card.image}
+                  style={styles.sixCardFullImage}
+                  contentFit="cover"
+                />
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+    </View>
+  );
+};
 
 export default MarketplaceHeader;

@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { StatusBar } from 'expo-status-bar';
+import { LinearGradient } from 'expo-linear-gradient';
 import {
   Smartphone,
   Sparkles,
@@ -28,9 +29,9 @@ import {
   JOURNEY_DETAILS,
 } from '../data/marketplaceData';
 import { CartProvider } from '../context/CartContext';
-import MarketplaceHeader from '../components/marketplace/MarketplaceHeader';
-import PromotionalHeroBanner from '../components/marketplace/PromotionalHeroBanner';
-import StationHaltNotifier from '../components/marketplace/StationHaltNotifier';
+import MarketplaceHeader, {
+  MarketplaceHeaderScrollable,
+} from '../components/marketplace/MarketplaceHeader';
 import MarketplaceProductCard from '../components/marketplace/MarketplaceProductCard';
 import BerthGuaranteeCard from '../components/marketplace/BerthGuaranteeCard';
 import FloatingCartBar from '../components/marketplace/FloatingCartBar';
@@ -209,23 +210,23 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     <View style={styles.container}>
       <StatusBar style="dark" />
 
-      {/* FULL SCREEN MANDALA BACKGROUND IMAGE */}
-      <Image
-        source={require('../assets/images/app_mandala_bg.jpg')}
+      {/* FULL SCREEN WARM APRICOT-PEACH GRADIENT (EXACTLY MATCHING BANNER THEME) */}
+      <LinearGradient
+        colors={['#FED8C5', '#FFDDC4', '#FFE2C2', '#FFF0E2']}
         style={StyleSheet.absoluteFill}
-        contentFit="cover"
       />
 
-      {/* FIXED 3-ROW APP HEADER (Features Mandala Background on Upper Part) */}
+      {/* FIXED STATIC APP HEADER: From Upper to Category Navigation remains static */}
       <MarketplaceHeader
         selectedCategory={selectedCategory}
         onSelectCategory={handleCategoryToggle}
         onSearchPress={handleSearchPress}
         onProfilePress={handleProfilePress}
         onJourneyDetailsPress={handleJourneyDetailsPress}
+        onCartPress={onNavigateToCart}
       />
 
-      {/* MAIN SCROLLABLE CATALOG CONTENT */}
+      {/* MAIN SCROLLABLE CATALOG CONTENT (Banner & Cards scroll upward) */}
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -233,11 +234,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         onScroll={handleScroll}
         scrollEventThrottle={16}
       >
-        {/* PROMOTIONAL HERO BANNER */}
-        <PromotionalHeroBanner onPress={handleStationHaltDetails} />
-
-        {/* QUICK STATION HALT NOTIFIER PILL */}
-        <StationHaltNotifier onDetailsPress={handleStationHaltDetails} />
+        {/* SCROLLABLE BANNER & 6 CATEGORY CARDS (Scrolls upward when user scrolls) */}
+        <MarketplaceHeaderScrollable onProductPress={handleOpenProduct} />
 
         {/* RAILQUICK SPOTLIGHT COLORFUL SLIDABLE CARDS */}
         <RailQuickSpotlightCarousel
@@ -635,19 +633,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   sectionTitle: {
-    fontSize: 15.5,
+    fontSize: 16,
     fontWeight: '800',
-    color: '#0F172A',
+    color: '#342D29',
   },
   sectionSubtitle: {
-    fontSize: 11,
-    color: '#64748B',
+    fontSize: 11.5,
+    color: '#79665B',
     marginTop: 1,
   },
   sectionItemCount: {
     fontSize: 11.5,
     fontWeight: '800',
-    color: '#159447',
+    color: '#C2410C',
   },
   discreetBadge: {
     backgroundColor: '#FFF1F2',
