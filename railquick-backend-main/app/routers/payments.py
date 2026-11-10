@@ -16,7 +16,11 @@ from app.config import (
     PHONEPE_CALLBACK_URL,
     PHONEPE_ENV,
     PHONEPE_MERCHANT_ID,
+    PHONEPE_PROD_ALT1_URL,
     PHONEPE_PROD_BASE_URL,
+    PHONEPE_PROD_BASE_URLS,
+    PHONEPE_PROD_HERMES_URL,
+    PHONEPE_PROD_PRIMARY_URL,
     PHONEPE_SALT_INDEX,
     PHONEPE_SALT_KEY,
     PHONEPE_UAT_BASE_URL,
@@ -142,12 +146,18 @@ async def initiate_phonepe_payment(
     payload_json = json.dumps(phonepe_payload, separators=(",", ":"))
     base64_payload = base64.b64encode(payload_json.encode("utf-8")).decode("utf-8")
 
-    # 5. Compute X-VERIFY checksum: SHA256(base64_payload + "/pg/v1/pay" + salt_key) + "###" + salt_index
-    endpoint_path = "/pg/v1/pay"
+    # 5. Compute URL & X-VERIFY checksum: SHA256(base64_payload + endpoint_path + salt_key) + "###" + salt_index
+    clean_base = settings.PHONEPE_BASE_URL.rstrip('/')
+    if clean_base.endswith("/apis/pg"):
+        endpoint_path = "/v1/pay"
+        request_url = f"{clean_base}/v1/pay"
+    else:
+        endpoint_path = "/pg/v1/pay"
+        request_url = f"{clean_base}/pg/v1/pay"
+
     x_verify = calculate_phonepe_checksum(endpoint_path, base64_payload)
 
     # 6. Make async HTTP POST to PhonePe API
-    request_url = f"{settings.PHONEPE_BASE_URL.rstrip('/')}/pg/v1/pay"
     headers = {
         "Content-Type": "application/json",
         "X-VERIFY": x_verify,
@@ -156,15 +166,23 @@ async def initiate_phonepe_payment(
     body = {"request": base64_payload}
 
     logger.info(
-        "Calling PhonePe initiate: Target URL=%s | Headers=%s",
+        "Calling PhonePe initiate: Target URL=%s | Checksum Path=%s | Headers=%s",
         request_url,
+        endpoint_path,
         headers,
     )
 
-    fallback_candidates: List[str] = [
-        f"{settings.PHONEPE_ALT_SANDBOX_BASE_URL.rstrip('/')}/pg/v1/pay",
-        f"{settings.PHONEPE_UAT_BASE_URL.rstrip('/')}/pg/v1/pay",
-        f"{settings.PHONEPE_PROD_BASE_URL.rstrip('/')}/pg/v1/pay",
+    # Candidate production & sandbox endpoints: (url, checksum_path)
+    # Primary: https://api.phonepe.com/apis/pg/v1/pay
+    # Alternate 1: https://api.phonepe.com/pg/v1/pay
+    # Alternate 2: https://api.phonepe.com/apis/hermes/pg/v1/pay
+    fallback_candidates: List[tuple[str, str]] = [
+        ("https://api.phonepe.com/apis/pg/v1/pay", "/v1/pay"),
+        ("https://api.phonepe.com/apis/pg/v1/pay", "/pg/v1/pay"),
+        ("https://api.phonepe.com/pg/v1/pay", "/pg/v1/pay"),
+        ("https://api.phonepe.com/apis/hermes/pg/v1/pay", "/pg/v1/pay"),
+        ("https://api.phonepe.com/apis/pg-sandbox/pg/v1/pay", "/pg/v1/pay"),
+        ("https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/pay", "/pg/v1/pay"),
     ]
 
     async with httpx.AsyncClient(timeout=15.0) as http_client:
@@ -177,38 +195,69 @@ async def initiate_phonepe_payment(
                 detail=f"Unable to connect to PhonePe gateway: {str(exc)}",
             )
 
-        # 404 Fallback: if PhonePe Hermes returns 404, check fallback endpoints
-        if response.status_code == 404:
+        # Detect 400/404, "Api Mapping Not Found", or routing mismatch
+        is_mapping_error = False
+        if response.status_code in (400, 404):
+            is_mapping_error = True
+        else:
+            try:
+                err_body = response.json()
+                msg = str(err_body.get("message", ""))
+                if "Mapping Not Found" in msg or "Api Mapping" in msg:
+                    is_mapping_error = True
+            except Exception:
+                if "Mapping Not Found" in response.text:
+                    is_mapping_error = True
+
+        if is_mapping_error:
             logger.warning(
-                "PhonePe initiate returned status 404 from %s: %s. Attempting fallback endpoints...",
+                "PhonePe initiate returned status %d from %s. Response body: %s. Attempting alternative candidate endpoints...",
+                response.status_code,
                 request_url,
                 response.text,
             )
-            for fb_target in fallback_candidates:
-                if fb_target == request_url:
+            for fb_target, fb_path in fallback_candidates:
+                if fb_target == request_url and fb_path == endpoint_path:
                     continue
+
+                fb_x_verify = calculate_phonepe_checksum(fb_path, base64_payload)
+                fb_headers = {
+                    "Content-Type": "application/json",
+                    "X-VERIFY": fb_x_verify,
+                    "Accept": "application/json",
+                }
+
                 logger.info(
-                    "Calling PhonePe fallback: Target URL=%s | Headers=%s",
+                    "Calling PhonePe alternative: Target URL=%s | Checksum Path=%s | Headers=%s",
                     fb_target,
-                    headers,
+                    fb_path,
+                    fb_headers,
                 )
                 try:
-                    fb_response = await http_client.post(fb_target, json=body, headers=headers)
+                    fb_response = await http_client.post(fb_target, json=body, headers=fb_headers)
                     logger.info(
-                        "PhonePe fallback (%s) returned status %d: %s",
+                        "PhonePe candidate (%s, path: %s) returned status %d: %s",
                         fb_target,
+                        fb_path,
                         fb_response.status_code,
                         fb_response.text,
                     )
                     if fb_response.status_code == 200:
-                        logger.info("PhonePe fallback succeeded using %s", fb_target)
+                        logger.info("PhonePe candidate succeeded using %s (path: %s)", fb_target, fb_path)
                         response = fb_response
                         break
-                    elif fb_response.status_code != 404:
+                    elif fb_response.status_code != 404 and "Api Mapping Not Found" not in fb_response.text:
+                        logger.info(
+                            "PhonePe candidate returned specific gateway response (%d) from %s: %s",
+                            fb_response.status_code,
+                            fb_target,
+                            fb_response.text,
+                        )
                         response = fb_response
-                        break
+                        if fb_response.status_code < 400:
+                            break
                 except Exception as fb_exc:
-                    logger.error("Error during fallback request to %s: %s", fb_target, fb_exc)
+                    logger.error("Error during candidate request to %s: %s", fb_target, fb_exc)
 
     if response.status_code != 200:
         logger.error(
@@ -375,10 +424,15 @@ async def check_phonepe_payment_status(
             detail="PhonePe merchant credentials not configured",
         )
 
-    status_path = f"/pg/v1/status/{PHONEPE_MERCHANT_ID}/{merchant_transaction_id}"
-    x_verify = calculate_phonepe_checksum(status_path, "")
+    clean_base = settings.PHONEPE_BASE_URL.rstrip('/')
+    if clean_base.endswith("/apis/pg"):
+        status_path = f"/v1/status/{PHONEPE_MERCHANT_ID}/{merchant_transaction_id}"
+        request_url = f"{clean_base}/v1/status/{PHONEPE_MERCHANT_ID}/{merchant_transaction_id}"
+    else:
+        status_path = f"/pg/v1/status/{PHONEPE_MERCHANT_ID}/{merchant_transaction_id}"
+        request_url = f"{clean_base}{status_path}"
 
-    request_url = f"{settings.PHONEPE_BASE_URL.rstrip('/')}{status_path}"
+    x_verify = calculate_phonepe_checksum(status_path, "")
     headers = {
         "Content-Type": "application/json",
         "X-VERIFY": x_verify,
@@ -387,15 +441,33 @@ async def check_phonepe_payment_status(
     }
 
     logger.info(
-        "Calling PhonePe status check: Target URL=%s | Headers=%s",
+        "Calling PhonePe status check: Target URL=%s | Checksum Path=%s | Headers=%s",
         request_url,
+        status_path,
         headers,
     )
 
-    status_fallback_candidates: List[str] = [
-        f"{settings.PHONEPE_ALT_SANDBOX_BASE_URL.rstrip('/')}{status_path}",
-        f"{settings.PHONEPE_UAT_BASE_URL.rstrip('/')}{status_path}",
-        f"{settings.PHONEPE_PROD_BASE_URL.rstrip('/')}{status_path}",
+    status_fallback_candidates: List[tuple[str, str]] = [
+        (
+            f"https://api.phonepe.com/apis/pg/v1/status/{PHONEPE_MERCHANT_ID}/{merchant_transaction_id}",
+            f"/v1/status/{PHONEPE_MERCHANT_ID}/{merchant_transaction_id}",
+        ),
+        (
+            f"https://api.phonepe.com/apis/pg/v1/status/{PHONEPE_MERCHANT_ID}/{merchant_transaction_id}",
+            f"/pg/v1/status/{PHONEPE_MERCHANT_ID}/{merchant_transaction_id}",
+        ),
+        (
+            f"https://api.phonepe.com/pg/v1/status/{PHONEPE_MERCHANT_ID}/{merchant_transaction_id}",
+            f"/pg/v1/status/{PHONEPE_MERCHANT_ID}/{merchant_transaction_id}",
+        ),
+        (
+            f"https://api.phonepe.com/apis/hermes/pg/v1/status/{PHONEPE_MERCHANT_ID}/{merchant_transaction_id}",
+            f"/pg/v1/status/{PHONEPE_MERCHANT_ID}/{merchant_transaction_id}",
+        ),
+        (
+            f"https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/status/{PHONEPE_MERCHANT_ID}/{merchant_transaction_id}",
+            f"/pg/v1/status/{PHONEPE_MERCHANT_ID}/{merchant_transaction_id}",
+        ),
     ]
 
     async with httpx.AsyncClient(timeout=10.0) as http_client:
@@ -408,27 +480,57 @@ async def check_phonepe_payment_status(
                 detail=f"Error querying PhonePe status: {str(exc)}",
             )
 
-        if response.status_code == 404:
+        is_status_mapping_error = False
+        if response.status_code in (400, 404):
+            is_status_mapping_error = True
+        else:
+            try:
+                s_json = response.json()
+                if "Mapping Not Found" in str(s_json.get("message", "")):
+                    is_status_mapping_error = True
+            except Exception:
+                pass
+
+        if is_status_mapping_error:
             logger.warning(
-                "PhonePe status check returned 404 from %s: %s. Attempting fallback endpoints...",
+                "PhonePe status check returned status %d from %s: %s. Attempting alternative candidate endpoints...",
+                response.status_code,
                 request_url,
                 response.text,
             )
-            for fb_target in status_fallback_candidates:
-                if fb_target == request_url:
+            for fb_target, fb_path in status_fallback_candidates:
+                if fb_target == request_url and fb_path == status_path:
                     continue
+                fb_x_verify = calculate_phonepe_checksum(fb_path, "")
+                fb_headers = {
+                    "Content-Type": "application/json",
+                    "X-VERIFY": fb_x_verify,
+                    "X-MERCHANT-ID": PHONEPE_MERCHANT_ID,
+                    "Accept": "application/json",
+                }
                 logger.info(
-                    "Calling PhonePe status fallback: Target URL=%s | Headers=%s",
+                    "Calling PhonePe status alternative: Target URL=%s | Checksum Path=%s | Headers=%s",
                     fb_target,
-                    headers,
+                    fb_path,
+                    fb_headers,
                 )
                 try:
-                    fb_response = await http_client.get(fb_target, headers=headers)
-                    if fb_response.status_code == 200 or fb_response.status_code != 404:
+                    fb_response = await http_client.get(fb_target, headers=fb_headers)
+                    logger.info(
+                        "PhonePe status candidate (%s) returned status %d: %s",
+                        fb_target,
+                        fb_response.status_code,
+                        fb_response.text,
+                    )
+                    if fb_response.status_code == 200:
                         response = fb_response
                         break
+                    elif fb_response.status_code != 404 and "Api Mapping Not Found" not in fb_response.text:
+                        response = fb_response
+                        if fb_response.status_code < 400:
+                            break
                 except Exception as fb_exc:
-                    logger.error("Error during status fallback to %s: %s", fb_target, fb_exc)
+                    logger.error("Error during status candidate request to %s: %s", fb_target, fb_exc)
 
         try:
             resp_json = response.json()
