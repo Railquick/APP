@@ -5,6 +5,7 @@ import { useCart } from './CartContext';
 import { useJourney } from './JourneyContext';
 import { paymentService } from '../services/paymentService';
 import { orderService } from '../services/orderService';
+import { INITIAL_RUNNING_ORDER, INITIAL_PAST_ORDERS } from '../data/demoOrdersData';
 
 export interface PlaceOrderOptions {
   shouldClearCart?: boolean;
@@ -21,6 +22,8 @@ export interface OrderContextType {
     options?: PlaceOrderOptions
   ) => Promise<Order>;
   setActiveOrder: (order: Order | null) => void;
+  getRunningOrders: () => Order[];
+  getPastOrders: () => Order[];
 }
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
@@ -29,15 +32,31 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const { items, summary, clearCart } = useCart();
   const { journey } = useJourney();
 
-  const [activeOrder, setActiveOrder] = useState<Order | null>(null);
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [activeOrder, setActiveOrder] = useState<Order | null>(INITIAL_RUNNING_ORDER);
+  const [orders, setOrders] = useState<Order[]>([
+    INITIAL_RUNNING_ORDER,
+    ...INITIAL_PAST_ORDERS,
+  ]);
   const [isPlacingOrder, setIsPlacingOrder] = useState<boolean>(false);
   const [orderError, setOrderError] = useState<string | null>(null);
 
-  // If there is an initial demo order or when order is placed
-  useEffect(() => {
-    // Keep null until user places order or views existing
-  }, []);
+  const getRunningOrders = (): Order[] => {
+    return orders.filter(
+      (o) =>
+        o.status !== 'DELIVERED' &&
+        o.status !== 'delivered' &&
+        o.status !== 'CANCELLED'
+    );
+  };
+
+  const getPastOrders = (): Order[] => {
+    return orders.filter(
+      (o) =>
+        o.status === 'DELIVERED' ||
+        o.status === 'delivered' ||
+        o.status === 'CANCELLED'
+    );
+  };
 
   const placeOrder = async (
     paymentMethod: PaymentMethodId,
@@ -99,6 +118,8 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         orderError,
         placeOrder,
         setActiveOrder,
+        getRunningOrders,
+        getPastOrders,
       }}
     >
       {children}
