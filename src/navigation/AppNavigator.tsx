@@ -441,4 +441,3 @@ const styles = StyleSheet.create({
 });
 
 export default AppNavigator;
-
