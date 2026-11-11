@@ -19,6 +19,9 @@ RAILWAY_API_BASE_URL: str = os.getenv(
 RAILWAY_API_KEY: str = os.getenv("RAILWAY_API_KEY", "")
 RAILWAY_API_HOST: str = os.getenv("RAILWAY_API_HOST", "irctc1.p.rapidapi.com")
 
+# irctc.dev Live PNR Status Verification API
+IRCTC_DEV_API_KEY: str = os.getenv("IRCTC_DEV_API_KEY", "").strip()
+
 # PhonePe Standard Checkout Configuration
 PHONEPE_MERCHANT_ID: str = os.getenv("PHONEPE_MERCHANT_ID", "PGTESTPAYUAT").strip()
 PHONEPE_SALT_KEY: str = os.getenv(

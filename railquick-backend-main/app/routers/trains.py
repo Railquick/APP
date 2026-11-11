@@ -2,6 +2,7 @@ from datetime import datetime
 import logging
 from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, HTTPException, Query, status
+from pydantic import BaseModel, Field
 
 from app.config import supabase
 from app.utils.time_utils import (
@@ -10,7 +11,7 @@ from app.utils.time_utils import (
     ORDER_CUTOFF_BUFFER_MINUTES,
     IST_TIMEZONE,
 )
-from app.utils.railway_client import railway_client
+from app.utils.railway_client import railway_client, get_pnr_live_status
 
 logger = logging.getLogger("railquick.trains_router")
 
@@ -72,6 +73,172 @@ async def get_pnr_status_endpoint(pnr_number: str) -> Dict[str, Any]:
 
     pnr_result = await railway_client.get_pnr_status(pnr_clean)
     return pnr_result
+
+
+class VerifyPNRRequest(BaseModel):
+    pnr: str = Field(..., description="10-digit Indian Railways PNR number")
+
+
+@router.post("/verify-pnr")
+async def verify_pnr_endpoint(payload: VerifyPNRRequest) -> Dict[str, Any]:
+    """
+    Verify live PNR journey and check eligibility for Hazrat Nizamuddin (NZM) delivery.
+    Accepts 10-digit numeric format.
+    Fetches live journey details via get_pnr_live_status(pnr).
+    Checks if route/journey passes through or halts at Hazrat Nizamuddin ('NZM'):
+      - If passenger's destination is reached before NZM or train does not halt at NZM, returns 400 Bad Request.
+      - If valid for NZM, parses and returns verified delivery details.
+    """
+    pnr_raw = payload.pnr.strip()
+    pnr_clean = "".join(ch for ch in pnr_raw if ch.isdigit())
+    if not (pnr_clean.isdigit() and len(pnr_clean) == 10):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid PNR number. Must be a 10-digit numeric code.",
+        )
+
+    # 1. Fetch live journey details via get_pnr_live_status
+    pnr_response = await get_pnr_live_status(pnr_clean)
+    data = (
+        pnr_response.get("data")
+        if isinstance(pnr_response.get("data"), dict)
+        else pnr_response
+    )
+
+    # 2. Extract passenger details
+    passengers = data.get("passengers") or data.get("passengerList") or []
+    primary_passenger: Dict[str, Any] = {}
+    if isinstance(passengers, list) and len(passengers) > 0 and isinstance(passengers[0], dict):
+        primary_passenger = dict(passengers[0])
+
+    if "seatNumber" not in primary_passenger:
+        primary_passenger["seatNumber"] = (
+            primary_passenger.get("seat")
+            or primary_passenger.get("berth")
+            or primary_passenger.get("currentBerthNo")
+            or primary_passenger.get("bookingBerthNo")
+        )
+    if "coach" not in primary_passenger:
+        primary_passenger["coach"] = (
+            primary_passenger.get("currentCoachId")
+            or primary_passenger.get("bookingCoachId")
+        )
+
+    # 3. Normalize train details
+    train_number = str(
+        data.get("trainNumber")
+        or data.get("train_number")
+        or data.get("train_no")
+        or data.get("trainNo")
+        or ""
+    ).strip()
+
+    train_name = str(
+        data.get("trainName")
+        or data.get("train_name")
+        or data.get("train_no_name")
+        or ""
+    ).strip()
+
+    chart_status = str(
+        data.get("chartStatus")
+        or data.get("chart_status")
+        or data.get("status")
+        or "CNF"
+    ).strip()
+
+    data["trainNumber"] = train_number
+    data["trainName"] = train_name
+    data["chartStatus"] = chart_status
+
+    # 4. Extract passenger's boarding and destination stations
+    from_info = data.get("from")
+    to_info = data.get("to")
+
+    board_code = str(
+        (from_info.get("code") if isinstance(from_info, dict) else from_info)
+        or data.get("boardingPoint")
+        or data.get("sourceStation")
+        or data.get("from_station")
+        or ""
+    ).strip().upper()
+
+    dest_code = str(
+        (to_info.get("code") if isinstance(to_info, dict) else to_info)
+        or data.get("destinationStation")
+        or data.get("reservationUpto")
+        or data.get("to_station")
+        or ""
+    ).strip().upper()
+
+    # 5. Check if route/journey passes through or halts at Hazrat Nizamuddin ('NZM')
+    stops = await railway_client.get_train_schedule(train_number) if train_number else []
+
+    nzm_stop = next(
+        (s for s in stops if str(s.get("station_code", "")).strip().upper() == "NZM"),
+        None,
+    )
+
+    if nzm_stop:
+        nzm_seq = int(nzm_stop.get("stop_sequence") or 0)
+
+        # Check if destination reached before NZM
+        if dest_code and dest_code != "NZM":
+            dest_stop = next(
+                (s for s in stops if str(s.get("station_code", "")).strip().upper() == dest_code),
+                None,
+            )
+            if dest_stop:
+                dest_seq = int(dest_stop.get("stop_sequence") or 0)
+                if dest_seq < nzm_seq:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="RailQuick delivery is currently available only for trains halting at Hazrat Nizamuddin (NZM).",
+                    )
+
+        # Check if passenger boards after NZM
+        if board_code and board_code != "NZM":
+            board_stop = next(
+                (s for s in stops if str(s.get("station_code", "")).strip().upper() == board_code),
+                None,
+            )
+            if board_stop:
+                board_seq = int(board_stop.get("stop_sequence") or 0)
+                if board_seq >= nzm_seq:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="RailQuick delivery is currently available only for trains halting at Hazrat Nizamuddin (NZM).",
+                    )
+    else:
+        # NZM not found in schedule stops - check if directly boarding or detraining at NZM
+        is_nzm_journey = (board_code == "NZM" or dest_code == "NZM")
+        if not is_nzm_journey:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="RailQuick delivery is currently available only for trains halting at Hazrat Nizamuddin (NZM).",
+            )
+
+    # 6. Populate arrival time for NZM if not present in data
+    if not data.get("arrivalTime"):
+        if nzm_stop:
+            data["arrivalTime"] = (
+                nzm_stop.get("scheduled_arrival")
+                or nzm_stop.get("arrival_time")
+            )
+        if not data.get("arrivalTime"):
+            data["arrivalTime"] = "16:45"
+
+    return {
+        "valid": True,
+        "pnr": pnr_clean,
+        "train_number": data.get("trainNumber"),
+        "train_name": data.get("trainName"),
+        "station_code": "NZM",
+        "arrival_time": data.get("arrivalTime"),
+        "coach": primary_passenger.get("coach"),
+        "seat": primary_passenger.get("seatNumber"),
+        "pnr_status": data.get("chartStatus"),
+    }
 
 
 def _parse_simulated_now(simulated_time: Optional[str]) -> Optional[datetime]:
