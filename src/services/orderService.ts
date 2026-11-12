@@ -5,6 +5,7 @@ import { CartSummary } from '../types/cart';
 import { ProductItem } from '../types/product';
 import { DEFAULT_RUNNER, generateTrackingSteps } from './trackingService';
 import { API_BASE_URL } from '../config/constants';
+import { authService, getInitialStoredUser } from './authService';
 
 /**
  * Converts non-UUID product IDs (like string or mock IDs) to a deterministic UUIDv4 format
@@ -36,14 +37,15 @@ class OrderService {
   ): Promise<Order> {
     const deliveryStation = 'NZM'; // Locked to Hazrat Nizamuddin (NZM) Pilot Hub
     const passengerName = passengerDetails?.name || journey.passengerName || 'Passenger';
-    let passengerPhone = (passengerDetails?.phone || journey.passengerPhone || '9876543210').replace(/\D/g, '');
+    const fallbackPhone = getInitialStoredUser?.()?.phone || '9876543210';
+    let passengerPhone = (passengerDetails?.phone || journey.passengerPhone || fallbackPhone).replace(/\D/g, '');
     if (passengerPhone.length === 12 && passengerPhone.startsWith('91')) {
       passengerPhone = passengerPhone.slice(2);
     } else if (passengerPhone.length === 11 && passengerPhone.startsWith('0')) {
       passengerPhone = passengerPhone.slice(1);
     }
     if (passengerPhone.length !== 10) {
-      passengerPhone = '9876543210';
+      passengerPhone = fallbackPhone.replace(/\D/g, '').slice(-10) || '9876543210';
     }
 
     const trainNo = journey.trainNumber || '12424';

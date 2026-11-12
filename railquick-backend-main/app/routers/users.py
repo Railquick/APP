@@ -22,7 +22,11 @@ class UserProfileResponse(BaseModel):
 
 class UserProfileUpdate(BaseModel):
     name: Optional[str] = Field(None, description="Updated user full name")
+    full_name: Optional[str] = Field(None, description="Updated user full name alias")
     phone: Optional[str] = Field(None, description="Updated 10-digit mobile contact number")
+    phone_number: Optional[str] = Field(None, description="Updated 10-digit mobile contact number alias")
+    email: Optional[str] = Field(None, description="Updated user email address")
+    avatar_url: Optional[str] = Field(None, description="Updated profile avatar image URL")
 
 
 def sanitize_phone_number(phone_raw: Optional[str]) -> Optional[str]:
@@ -201,19 +205,27 @@ async def get_my_profile(
     )
 
 
+@router.patch("/me", response_model=UserProfileResponse)
 @router.put("/me", response_model=UserProfileResponse)
 async def update_my_profile(
     payload: UserProfileUpdate,
     current_user: Dict[str, Any] = Depends(get_current_user),
 ) -> UserProfileResponse:
     """
-    Update user profile details (name and/or phone).
-    Upserts the updated values into Supabase and returns the updated UserProfileResponse.
+    Update user profile details (name, phone, email, and/or avatar_url).
+    Upserts the updated values into Supabase profiles and users tables
+    and returns the updated UserProfileResponse.
     """
     user_id = str(current_user["id"])
 
-    cleaned_name: Optional[str] = payload.name.strip() if payload.name is not None else None
-    cleaned_phone: Optional[str] = sanitize_phone_number(payload.phone) if payload.phone is not None else None
+    target_name = payload.full_name if payload.full_name is not None else payload.name
+    cleaned_name: Optional[str] = target_name.strip() if target_name is not None else None
+
+    target_phone = payload.phone if payload.phone is not None else payload.phone_number
+    cleaned_phone: Optional[str] = sanitize_phone_number(target_phone) if target_phone is not None else None
+
+    cleaned_email: Optional[str] = payload.email.strip() if payload.email is not None else None
+    cleaned_avatar: Optional[str] = payload.avatar_url.strip() if payload.avatar_url is not None else None
 
     # Prepare payload for Supabase profiles table
     profile_updates: Dict[str, Any] = {"id": user_id}
@@ -229,6 +241,11 @@ async def update_my_profile(
         user_updates["name"] = cleaned_name
     if cleaned_phone is not None:
         user_updates["phone_number"] = cleaned_phone
+        user_updates["phone"] = cleaned_phone
+    if cleaned_email is not None:
+        user_updates["email"] = cleaned_email
+    if cleaned_avatar is not None:
+        user_updates["avatar_url"] = cleaned_avatar
 
     # Upsert into profiles
     try:

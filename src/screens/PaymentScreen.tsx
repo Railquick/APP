@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert, Linking } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useCart } from '../context/CartContext';
 import { useJourney } from '../context/JourneyContext';
 import { useOrder } from '../context/OrderContext';
+import { useAuth } from '../context/AuthContext';
 import { Order } from '../types/order';
 import { PaymentMethodId } from '../types/payment';
 import { paymentService } from '../services/paymentService';
@@ -29,20 +30,31 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({
   const { summary, clearCart } = useCart();
   const { journey, updatePassenger } = useJourney();
   const { placeOrder, isPlacingOrder } = useOrder();
+  const { user, updateProfile } = useAuth();
 
   // NZM Pilot: Default to PhonePe / UPI Online Payment (Pre-paid required)
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethodId>('phonepe');
   const [isSuccess, setIsSuccess] = useState<boolean>(false);
   const [isRedirecting, setIsRedirecting] = useState<boolean>(false);
   const [passengerName, setPassengerName] = useState<string>(
-    journey.passengerName || 'Passenger'
+    user?.name || journey.passengerName || 'Passenger'
   );
   const [passengerPhone, setPassengerPhone] = useState<string>(
-    journey.passengerPhone || '9876543210'
+    user?.phone || user?.phoneNumber || journey.passengerPhone || ''
   );
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [supportModalVisible, setSupportModalVisible] = useState(false);
   const [createdOrder, setCreatedOrder] = useState<Order | null>(null);
+
+  // Sync state if user profile is loaded asynchronously
+  useEffect(() => {
+    if (user?.name && (!passengerName || passengerName === 'Passenger')) {
+      setPassengerName(user.name);
+    }
+    if ((user?.phone || user?.phoneNumber) && !passengerPhone) {
+      setPassengerPhone(user.phone || user.phoneNumber || '');
+    }
+  }, [user]);
 
   const handlePay = async () => {
     if (isPlacingOrder || isSuccess || isRedirecting) return;
@@ -72,6 +84,13 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({
 
     // Save passenger details in context
     updatePassenger(passengerName, cleanPhone);
+
+    // Save/update phone number in user profile (Supabase / profiles table)
+    if (updateProfile) {
+      updateProfile(passengerName || user?.name || '', cleanPhone).catch((err) => {
+        console.warn('Background profile phone sync error:', err);
+      });
+    }
 
     // If cart total changed since initial order creation, reset cached order reference
     let orderToPay = createdOrder;

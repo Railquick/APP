@@ -189,8 +189,12 @@ export const AppNavigator: React.FC = () => {
 
           const name = searchParams.get('name');
           const email = searchParams.get('email');
+          const avatarUrl = searchParams.get('avatar_url') || searchParams.get('picture');
+          const phone = searchParams.get('phone') || searchParams.get('phone_number');
           if (name) localStorage.setItem('railquick_user_name', name);
           if (email) localStorage.setItem('railquick_user_email', email);
+          if (avatarUrl) localStorage.setItem('railquick_user_avatar', avatarUrl);
+          if (phone) localStorage.setItem('railquick_user_phone', phone);
 
           // Clean URL parameters cleanly without refreshing the page
           window.history.replaceState({}, document.title, window.location.pathname);

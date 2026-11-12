@@ -329,6 +329,18 @@ async def create_order(
     order_record = order_insert_res.data[0]
     order_id = order_record["id"]
 
+    # Auto-sync phone number to profiles and users tables for authenticated customer
+    if effective_user_id and payload.passenger_phone:
+        clean_phone = payload.passenger_phone.strip()
+        try:
+            supabase.table("profiles").upsert({"id": str(effective_user_id), "phone": clean_phone}).execute()
+        except Exception as exc:
+            logger.warning("Could not sync phone to profiles table on order create: %s", exc)
+        try:
+            supabase.table("users").update({"phone_number": clean_phone}).eq("id", str(effective_user_id)).execute()
+        except Exception:
+            pass
+
     # Insert all items into order_items table
     order_items_to_insert = [
         {

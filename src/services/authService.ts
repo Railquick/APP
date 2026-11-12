@@ -9,37 +9,70 @@ const API_BASE_CANDIDATES = [
   'https://railquick-backend.onrender.com',
 ].filter(Boolean) as string[];
 
-export const DEFAULT_REAL_USER: UserProfile = {
-  id: 'usr-ayush-uuid-001',
-  name: 'Ayush Mishra',
-  email: 'ayush@gmail.com',
-  phone: '9876543210',
-  phoneNumber: '9876543210',
-  avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&fit=crop&crop=faces&q=80',
-  authProvider: 'google',
-  isVerified: true,
+export const getInitialStoredUser = (): UserProfile => {
+  let name = '';
+  let email = '';
+  let phone = '';
+  let avatarUrl = '';
+
+  if (typeof window !== 'undefined') {
+    try {
+      name = localStorage.getItem('railquick_user_name') || '';
+      email = localStorage.getItem('railquick_user_email') || '';
+      phone = localStorage.getItem('railquick_user_phone') || '';
+      avatarUrl = localStorage.getItem('railquick_user_avatar') || '';
+    } catch {}
+  }
+
+  return {
+    id: 'usr-customer-id',
+    name,
+    email,
+    phone,
+    phoneNumber: phone,
+    avatarUrl,
+    authProvider: 'google',
+    isVerified: Boolean(name || email),
+  };
 };
 
+export const DEFAULT_REAL_USER: UserProfile = getInitialStoredUser();
+
 class AuthService {
-  private currentUser: UserProfile = DEFAULT_REAL_USER;
-  private token: string | null = 'demo-railquick-jwt-bearer-token';
+  private currentUser: UserProfile = getInitialStoredUser();
+  private token: string | null = null;
+
+  public getToken(): string | null {
+    if (typeof window !== 'undefined') {
+      const stored =
+        localStorage.getItem('railquick_token') ||
+        localStorage.getItem('access_token') ||
+        localStorage.getItem('token');
+      if (stored) {
+        this.token = stored;
+        return stored;
+      }
+    }
+    return this.token;
+  }
 
   /**
    * 1. GET /api/v1/users/me (Headers: Authorization: Bearer <token>)
    */
   public async getMyProfile(authToken?: string): Promise<UserProfile> {
-    const bearer = authToken || this.token;
+    const bearer = authToken || this.getToken();
 
     for (const baseUrl of API_BASE_CANDIDATES) {
       try {
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',
+          Accept: 'application/json',
         };
         if (bearer) {
           headers['Authorization'] = `Bearer ${bearer}`;
         }
 
-        const response = await fetch(`${baseUrl}/api/v1/users/me`, {
+        const response = await fetch(`${baseUrl.replace(/\/$/, '')}/api/v1/users/me`, {
           method: 'GET',
           headers,
         });
@@ -60,33 +93,44 @@ class AuthService {
   }
 
   /**
-   * 2. PUT /api/v1/users/me
+   * 2. PATCH /api/v1/users/me
    * Body: { "name": "...", "phone": "..." }
    */
   public async updateMyProfile(name: string, phone: string): Promise<UserProfile> {
+    const cleanPhone = phone ? phone.replace(/\D/g, '') : '';
     this.currentUser = {
       ...this.currentUser,
-      name,
-      phone,
-      phoneNumber: phone,
+      name: name !== undefined && name !== '' ? name : this.currentUser.name,
+      phone: cleanPhone,
+      phoneNumber: cleanPhone,
     };
 
-    const bearer = this.token;
+    if (typeof window !== 'undefined') {
+      try {
+        if (name) localStorage.setItem('railquick_user_name', name);
+        if (cleanPhone) localStorage.setItem('railquick_user_phone', cleanPhone);
+      } catch {}
+    }
+
+    const bearer = this.getToken();
     for (const baseUrl of API_BASE_CANDIDATES) {
       try {
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',
+          Accept: 'application/json',
         };
         if (bearer) {
           headers['Authorization'] = `Bearer ${bearer}`;
         }
 
-        const response = await fetch(`${baseUrl}/api/v1/users/me`, {
-          method: 'PUT',
+        const response = await fetch(`${baseUrl.replace(/\/$/, '')}/api/v1/users/me`, {
+          method: 'PATCH',
           headers,
           body: JSON.stringify({
             name,
-            phone,
+            full_name: name,
+            phone: cleanPhone,
+            phone_number: cleanPhone,
           }),
         });
 
@@ -114,10 +158,11 @@ class AuthService {
   }> {
     for (const baseUrl of API_BASE_CANDIDATES) {
       try {
-        const response = await fetch(`${baseUrl}/api/v1/auth/google`, {
+        const response = await fetch(`${baseUrl.replace(/\/$/, '')}/api/v1/auth/google`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            Accept: 'application/json',
           },
           body: JSON.stringify({ accessToken: googleAccessToken }),
         });
@@ -126,10 +171,16 @@ class AuthService {
           const data: AuthResponse = await response.json();
           if (data?.user) {
             this.token = data.access_token || data.token || 'jwt-bearer-token';
+            if (typeof window !== 'undefined' && this.token) {
+              try {
+                localStorage.setItem('railquick_token', this.token);
+                localStorage.setItem('access_token', this.token);
+              } catch {}
+            }
             this.currentUser = this.mapBackendUser(data.user);
             return {
               user: this.currentUser,
-              token: this.token || 'jwt-bearer-token',
+              token: this.token,
             };
           }
         }
@@ -138,7 +189,7 @@ class AuthService {
       }
     }
 
-    this.token = 'jwt-railquick-authenticated-token';
+    this.token = this.getToken() || 'jwt-railquick-authenticated-token';
     return {
       user: this.currentUser,
       token: this.token,
@@ -149,26 +200,48 @@ class AuthService {
     return this.currentUser;
   }
 
-  public getToken(): string | null {
-    return this.token;
-  }
-
   public clearSession(): void {
     this.token = null;
-    this.currentUser = DEFAULT_REAL_USER;
+    this.currentUser = {
+      id: '',
+      name: '',
+      email: '',
+      phone: '',
+      phoneNumber: '',
+      avatarUrl: '',
+      authProvider: 'google',
+      isVerified: false,
+    };
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem('railquick_token');
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('token');
+        localStorage.removeItem('railquick_user_name');
+        localStorage.removeItem('railquick_user_email');
+        localStorage.removeItem('railquick_user_phone');
+        localStorage.removeItem('railquick_user_avatar');
+      } catch {}
+    }
   }
 
   private mapBackendUser(raw: any): UserProfile {
-    const name = raw.name || raw.full_name || 'Ayush Mishra';
-    const email = raw.email || 'ayush@gmail.com';
-    const phone = raw.phone || raw.phone_number || '9876543210';
-    const avatarUrl =
-      raw.avatar_url ||
-      raw.picture ||
-      'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&fit=crop&crop=faces&q=80';
+    const name = raw.name || raw.full_name || '';
+    const email = raw.email || '';
+    const phone = raw.phone || raw.phone_number || '';
+    const avatarUrl = raw.avatar_url || raw.picture || '';
+
+    if (typeof window !== 'undefined') {
+      try {
+        if (name) localStorage.setItem('railquick_user_name', name);
+        if (email) localStorage.setItem('railquick_user_email', email);
+        if (phone) localStorage.setItem('railquick_user_phone', phone);
+        if (avatarUrl) localStorage.setItem('railquick_user_avatar', avatarUrl);
+      } catch {}
+    }
 
     return {
-      id: raw.id ? String(raw.id) : 'usr-ayush-uuid-001',
+      id: raw.id ? String(raw.id) : 'usr-customer-id',
       name,
       email,
       phone,

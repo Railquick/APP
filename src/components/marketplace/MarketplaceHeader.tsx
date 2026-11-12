@@ -377,6 +377,10 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
               <Text style={styles.headerAvatarInitial}>
                 {user.name.charAt(0).toUpperCase()}
               </Text>
+            ) : user?.email ? (
+              <Text style={styles.headerAvatarInitial}>
+                {user.email.charAt(0).toUpperCase()}
+              </Text>
             ) : (
               <User size={18} color="#342D29" strokeWidth={2.3} />
             )}

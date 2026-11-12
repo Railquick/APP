@@ -247,7 +247,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 />
               ) : (
                 <Text style={styles.avatarInitialLarge}>
-                  {user.name ? user.name.charAt(0).toUpperCase() : 'A'}
+                  {user.name ? user.name.charAt(0).toUpperCase() : (user.email ? user.email.charAt(0).toUpperCase() : 'U')}
                 </Text>
               )}
               <View style={styles.verifiedTickLarge}>
@@ -259,7 +259,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           {/* User Name / Account Title */}
           <View style={styles.userNameRow}>
             <Text style={styles.accountHeading}>
-              {user.name || 'Your account'}
+              {user.name || (user.email ? user.email.split('@')[0] : 'Passenger Profile')}
             </Text>
             <TouchableOpacity
               activeOpacity={0.7}
@@ -271,10 +271,29 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             </TouchableOpacity>
           </View>
 
+          {/* User Google Email */}
+          {user.email ? (
+            <View style={styles.userEmailRow}>
+              <Mail size={13} color="#64748B" />
+              <Text style={styles.userEmailText}>{user.email}</Text>
+            </View>
+          ) : null}
+
           {/* Phone Number & IRCTC Badge */}
-          <Text style={styles.userPhoneSubtitle}>
-            +91 {user.phone}
-          </Text>
+          {user.phone ? (
+            <Text style={styles.userPhoneSubtitle}>
+              {user.phone.startsWith('+91') ? user.phone : `+91 ${user.phone}`}
+            </Text>
+          ) : (
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => setIsEditProfileVisible(true)}
+              style={styles.addPhonePill}
+            >
+              <Phone size={12} color="#159447" />
+              <Text style={styles.addPhonePillText}>Add phone at checkout</Text>
+            </TouchableOpacity>
+          )}
 
           <View style={styles.irctcTagRow}>
             <View style={styles.irctcBadge}>
@@ -297,10 +316,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             style={styles.bannerGradient}
           >
             <View style={styles.bannerLeft}>
-              <Text style={styles.bannerTitle}>Active Train Journey</Text>
+              <Text style={styles.bannerTitle}>
+                {journey.trainName ? `${journey.trainName} (#${journey.trainNumber || '12424'})` : 'Active Train Journey'}
+              </Text>
               <View style={styles.bannerActionRow}>
                 <Text style={styles.bannerActionText}>
-                  Coach {journey.coach} • Berth {journey.berth} ({journey.berthType})
+                  Coach {journey.coach || 'B2'} • Berth {journey.berth || '36'} ({journey.berthType || 'Lower Berth'}) • {journey.station || 'NZM'}
                 </Text>
                 <ChevronRight size={13} color="#B45309" strokeWidth={2.6} />
               </View>
@@ -484,7 +505,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             <View style={styles.groupedRowTextCol}>
               <Text style={styles.groupedRowTitle}>Profile & passenger details</Text>
               <Text style={styles.groupedRowSub}>
-                {user.name} • +91 {user.phone}
+                {user.name || 'Passenger'} • {user.phone ? (user.phone.startsWith('+91') ? user.phone : `+91 ${user.phone}`) : 'Add phone at checkout'}
               </Text>
             </View>
             <ChevronRight size={16} color="#94A3B8" strokeWidth={2.2} />
@@ -946,7 +967,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
               <TextInput
                 value={editName}
                 onChangeText={setEditName}
-                placeholder="e.g. Ayush Mishra"
+                placeholder="e.g. Passenger Name"
                 placeholderTextColor="#94A3B8"
                 style={styles.modalTextInput}
               />
@@ -955,7 +976,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
               <TextInput
                 value={editPhone}
                 onChangeText={setEditPhone}
-                placeholder="e.g. 9876543210"
+                placeholder="Enter 10-digit mobile number"
                 placeholderTextColor="#94A3B8"
                 keyboardType="phone-pad"
                 maxLength={10}
@@ -964,7 +985,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
               <Text style={[styles.inputLabel, { marginTop: 12 }]}>EMAIL ADDRESS (GOOGLE ACCOUNT)</Text>
               <View style={[styles.modalTextInput, styles.disabledInput]}>
-                <Text style={styles.disabledInputText}>{user.email}</Text>
+                <Text style={styles.disabledInputText}>{user.email || 'Connected Google Account'}</Text>
               </View>
 
               <TouchableOpacity
@@ -1123,11 +1144,39 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#C3EDD1',
   },
+  userEmailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginBottom: 4,
+  },
+  userEmailText: {
+    fontSize: 13,
+    color: '#64748B',
+    fontWeight: '500',
+  },
   userPhoneSubtitle: {
     fontSize: 13.5,
     color: '#64748B',
     fontWeight: '600',
     marginBottom: 8,
+  },
+  addPhonePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#E7F8EE',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#C3EDD1',
+    marginBottom: 8,
+  },
+  addPhonePillText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#159447',
   },
   irctcTagRow: {
     flexDirection: 'row',

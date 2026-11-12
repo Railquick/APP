@@ -521,6 +521,10 @@ async def google_callback(
             redirect_params["name"] = user["name"]
         if user.get("email"):
             redirect_params["email"] = user["email"]
+        if user.get("avatar_url"):
+            redirect_params["avatar_url"] = user["avatar_url"]
+        if user.get("phone") or user.get("phone_number"):
+            redirect_params["phone"] = user.get("phone") or user.get("phone_number")
         redirect_target = f"{frontend_url}{separator}{urlencode(redirect_params)}"
         return RedirectResponse(url=redirect_target)
 
