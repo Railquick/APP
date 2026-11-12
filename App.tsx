@@ -11,7 +11,7 @@ import AppNavigator from './src/navigation/AppNavigator';
 export default function App() {
   return (
     <SafeAreaProvider style={styles.container}>
-      <AuthProvider>
+      {/*<AuthProvider>*/}
         <JourneyProvider>
           <CartProvider>
             <OrderProvider>
@@ -21,7 +21,7 @@ export default function App() {
             </OrderProvider>
           </CartProvider>
         </JourneyProvider>
-      </AuthProvider>
+      {/*</AuthProvider>*/}
     </SafeAreaProvider>
   );
 }

@@ -105,7 +105,7 @@ export const StationComingSoonScreen: React.FC<StationComingSoonScreenProps> = (
         accessibilityLabel={`Coming soon to ${stationName}`}
       />
 
-      <View style={[styles.stationPanel, { top: insets.top + 12 }]}>
+      <View style={[styles.stationPanel, { top: insets.top + 10 }]}>
         <Text style={styles.headingText}>Unserviceable area</Text>
         <TouchableOpacity
           accessibilityRole="button"
@@ -114,6 +114,12 @@ export const StationComingSoonScreen: React.FC<StationComingSoonScreenProps> = (
           onPress={handleStationDetails}
           style={styles.stationDetailsRow}
         >
+          <Navigation
+            size={14}
+            color="#4B5563"
+            strokeWidth={2.5}
+            style={styles.locationArrow}
+          />
           <Text
             style={styles.stationName}
             numberOfLines={1}
@@ -123,13 +129,7 @@ export const StationComingSoonScreen: React.FC<StationComingSoonScreenProps> = (
               ? `${stationDisplayName} (${stationCode})`
               : stationDisplayName}
           </Text>
-          <Navigation
-            size={15}
-            color="#263746"
-            strokeWidth={2.8}
-            style={styles.locationArrow}
-          />
-          <ChevronDown size={17} color="#263746" strokeWidth={2.5} />
+          <ChevronDown size={16} color="#4B5563" strokeWidth={2.5} />
         </TouchableOpacity>
       </View>
 
@@ -201,35 +201,23 @@ const styles = StyleSheet.create({
   stationPanel: {
     position: 'absolute',
     left: 16,
-    width: '86%',
-    maxWidth: 340,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 16,
-    backgroundColor: 'rgba(207, 226, 241, 0.76)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.72)',
-    shadowColor: '#25394A',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    elevation: 4,
+    right: 16,
   },
   headingText: {
-    color: '#202B35',
-    fontSize: 21,
+    color: '#111827',
+    fontSize: 23,
     fontWeight: '800',
-    letterSpacing: -0.25,
+    letterSpacing: -0.3,
   },
   stationDetailsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginTop: 3,
+    gap: 5,
+    marginTop: 4,
   },
   stationName: {
     flex: 1,
-    color: '#263746',
+    color: '#4B5563',
     fontSize: 14,
     fontWeight: '500',
     letterSpacing: 0,
