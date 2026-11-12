@@ -40,6 +40,7 @@ import {
   isStationServiceable,
 } from '../data/pnrDemoData';
 import { useJourney } from '../context/JourneyContext';
+import { verifyPNR } from '../services/trainService';
 
 interface PnrVerificationScreenProps {
   onContinueToMarketplace: () => void;
@@ -67,11 +68,11 @@ export const PnrVerificationScreen: React.FC<PnrVerificationScreenProps> = ({
     setErrorMessage(null);
   };
 
-  const handleFetchPnrDetails = (pnrToFetch?: string) => {
+  const handleFetchPnrDetails = async (pnrToFetch?: string) => {
     const target = (pnrToFetch || pnrInput).trim();
     const digitsOnly = target.replace(/[^0-9]/g, '');
 
-    if (digitsOnly.length < 6) {
+    if (digitsOnly.length !== 10) {
       setErrorMessage('Please enter a valid 10-digit Indian Railways PNR number');
       return;
     }
@@ -81,18 +82,65 @@ export const PnrVerificationScreen: React.FC<PnrVerificationScreenProps> = ({
     setErrorMessage(null);
     setVerifiedRecord(null);
 
-    // Simulate IRCTC API live lookup delay
-    setTimeout(() => {
-      const lookedUp = lookupPnrDetails(target);
-      setVerifiedRecord(lookedUp);
+    try {
+      const res = await verifyPNR(digitsOnly);
+
+      const record: PnrDemoRecord = {
+        pnr: res.pnr,
+        trainNumber: res.train_number,
+        trainName: res.train_name,
+        station: 'Hazrat Nizamuddin (NZM)',
+        stationCode: res.station_code || 'NZM',
+        platform: 'PF 1',
+        coach: res.coach || 'B2',
+        berth: res.seat || '36',
+        berthType: 'Confirmed Seat',
+        deliveryMinutes: 5,
+        haltMinutes: 5,
+        scheduledArrivalMins: 14,
+        haltDurationMins: 5,
+        statusText: res.pnr_status || 'CONFIRMED BERTH',
+        passengerName: 'Passenger',
+        isLive: true,
+      };
+
+      setVerifiedRecord(record);
+
+      // On success, update JourneyContext with returned train_name, train_number, coach, seat, and station_code ('NZM')
+      setJourney({
+        pnr: record.pnr,
+        trainNumber: record.trainNumber,
+        trainName: record.trainName,
+        station: record.station,
+        stationCode: record.stationCode,
+        platform: record.platform,
+        coach: record.coach,
+        berth: record.berth,
+        berthType: record.berthType,
+        passengerName: record.passengerName,
+        passengerPhone: '9876543210',
+        deliveryMinutes: record.deliveryMinutes,
+        haltMinutes: record.haltMinutes,
+        scheduledArrivalMins: record.scheduledArrivalMins,
+        haltDurationMins: record.haltDurationMins,
+        statusText: record.statusText,
+      });
+    } catch (err: any) {
+      const errorMsg =
+        err?.message ||
+        'RailQuick delivery is currently available only for trains halting at Hazrat Nizamuddin (NZM)';
+      setErrorMessage(errorMsg);
+      Alert.alert('Delivery Unavailable', errorMsg);
+    } finally {
       setIsLoading(false);
-    }, 850);
+    }
   };
 
   const handleSelectDemoPnr = (record: PnrDemoRecord) => {
-    setPnrInput(record.pnr.replace(/[^0-9]/g, ''));
+    const cleanDigits = record.pnr.replace(/[^0-9]/g, '');
+    setPnrInput(cleanDigits);
     setErrorMessage(null);
-    handleFetchPnrDetails(record.pnr);
+    handleFetchPnrDetails(cleanDigits);
   };
 
   const handleResetPnr = () => {

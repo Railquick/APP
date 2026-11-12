@@ -8,6 +8,9 @@ import {
   Modal,
   Dimensions,
   Platform,
+  TextInput,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -55,6 +58,7 @@ import {
 import { useJourney } from '../../context/JourneyContext';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
+import { verifyPNR } from '../../services/trainService';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -152,14 +156,65 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
 
   // Dynamic journey context with fallback
   let journey = JOURNEY_DETAILS;
+  let setJourneyFn: ((j: any) => void) | null = null;
   try {
     const journeyCtx = useJourney();
     if (journeyCtx?.journey) {
       journey = journeyCtx.journey;
     }
+    if (journeyCtx?.setJourney) {
+      setJourneyFn = journeyCtx.setJourney;
+    }
   } catch {
     // Fallback if rendered outside provider
   }
+
+  const [isChangingPnr, setIsChangingPnr] = useState(false);
+  const [newPnrInput, setNewPnrInput] = useState('');
+  const [isPnrVerifying, setIsPnrVerifying] = useState(false);
+  const [pnrModalError, setPnrModalError] = useState<string | null>(null);
+
+  const handleVerifyNewPnr = async () => {
+    const cleaned = newPnrInput.replace(/[^0-9]/g, '');
+    if (cleaned.length !== 10) {
+      setPnrModalError('Please enter a valid 10-digit Indian Railways PNR number');
+      return;
+    }
+
+    setIsPnrVerifying(true);
+    setPnrModalError(null);
+
+    try {
+      const res = await verifyPNR(cleaned);
+      if (setJourneyFn) {
+        setJourneyFn({
+          ...journey,
+          pnr: res.pnr,
+          trainNumber: res.train_number,
+          trainName: res.train_name,
+          station: 'Hazrat Nizamuddin (NZM)',
+          stationCode: res.station_code || 'NZM',
+          coach: res.coach || journey.coach || 'B2',
+          berth: res.seat || journey.berth || '36',
+          statusText: res.pnr_status || 'CONFIRMED BERTH',
+        });
+      }
+      setIsChangingPnr(false);
+      setNewPnrInput('');
+      Alert.alert(
+        'Journey Updated',
+        `Train: ${res.train_name} (${res.train_number})\nStation: Hazrat Nizamuddin (NZM)\nCoach: ${res.coach || 'B2'}, Berth: ${res.seat || '36'}`
+      );
+    } catch (err: any) {
+      const errorMsg =
+        err?.message ||
+        'RailQuick delivery is currently available only for trains halting at Hazrat Nizamuddin (NZM)';
+      setPnrModalError(errorMsg);
+      Alert.alert('Delivery Unavailable', errorMsg);
+    } finally {
+      setIsPnrVerifying(false);
+    }
+  };
 
   // Real user profile from AuthContext (auth.py)
   let user: any = null;
@@ -460,6 +515,66 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
                 <Text style={styles.pnrStatusText}>CONFIRMED</Text>
               </View>
             </View>
+
+            {/* Change PNR / Train Section */}
+            {isChangingPnr ? (
+              <View style={styles.changePnrBox}>
+                <Text style={styles.changePnrLabel}>ENTER 10-DIGIT PNR NUMBER</Text>
+                <View style={styles.changePnrInputRow}>
+                  <TextInput
+                    style={styles.changePnrInput}
+                    value={newPnrInput}
+                    onChangeText={(val) => {
+                      setNewPnrInput(val.replace(/[^0-9]/g, ''));
+                      setPnrModalError(null);
+                    }}
+                    placeholder="e.g. 2458910236"
+                    placeholderTextColor="#94A3B8"
+                    keyboardType="numeric"
+                    maxLength={10}
+                    editable={!isPnrVerifying}
+                  />
+                  <TouchableOpacity
+                    style={[
+                      styles.changePnrVerifyBtn,
+                      newPnrInput.length < 10 || isPnrVerifying ? styles.changePnrVerifyBtnDisabled : null,
+                    ]}
+                    onPress={handleVerifyNewPnr}
+                    disabled={newPnrInput.length < 10 || isPnrVerifying}
+                  >
+                    {isPnrVerifying ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <Text style={styles.changePnrVerifyBtnText}>Verify</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+                {pnrModalError ? (
+                  <Text style={styles.changePnrErrorText}>{pnrModalError}</Text>
+                ) : null}
+                <TouchableOpacity
+                  style={styles.cancelChangePnrBtn}
+                  onPress={() => {
+                    setIsChangingPnr(false);
+                    setNewPnrInput('');
+                    setPnrModalError(null);
+                  }}
+                >
+                  <Text style={styles.cancelChangePnrBtnText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={styles.switchTrainActionBtn}
+                onPress={() => {
+                  setIsChangingPnr(true);
+                  setPnrModalError(null);
+                }}
+              >
+                <Train size={14} color="#0F6C38" />
+                <Text style={styles.switchTrainActionText}>Change Train / Verify New PNR</Text>
+              </TouchableOpacity>
+            )}
 
             {/* Train & Berth Grid */}
             <View style={styles.modalInfoGrid}>
@@ -927,6 +1042,90 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '900',
     color: '#0F6C38',
+  },
+  switchTrainActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#E8F5E9',
+    borderRadius: 8,
+    marginTop: 8,
+    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: '#C8E6C9',
+  },
+  switchTrainActionText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#0F6C38',
+  },
+  changePnrBox: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 10,
+    padding: 10,
+    marginTop: 8,
+    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  changePnrLabel: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#64748B',
+    marginBottom: 6,
+    letterSpacing: 0.4,
+  },
+  changePnrInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  changePnrInput: {
+    flex: 1,
+    height: 40,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    fontSize: 14,
+    color: '#0F172A',
+    fontWeight: '600',
+  },
+  changePnrVerifyBtn: {
+    height: 40,
+    backgroundColor: '#0F6C38',
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  changePnrVerifyBtnDisabled: {
+    backgroundColor: '#94A3B8',
+  },
+  changePnrVerifyBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  changePnrErrorText: {
+    fontSize: 11.5,
+    color: '#DC2626',
+    marginTop: 6,
+    fontWeight: '600',
+  },
+  cancelChangePnrBtn: {
+    alignSelf: 'center',
+    marginTop: 6,
+    paddingVertical: 4,
+  },
+  cancelChangePnrBtnText: {
+    fontSize: 11.5,
+    color: '#64748B',
+    fontWeight: '600',
   },
   modalInfoGrid: {
     marginTop: 14,
