@@ -80,15 +80,15 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const [isEditProfileVisible, setIsEditProfileVisible] = useState(false);
 
   // Edit Profile form state (PUT /api/v1/users/me)
-  const [editName, setEditName] = useState(user.name);
-  const [editPhone, setEditPhone] = useState(user.phone);
+  const [editName, setEditName] = useState(user?.name || '');
+  const [editPhone, setEditPhone] = useState(user?.phone || '');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   // Sync edit form state when user changes
   React.useEffect(() => {
     if (user) {
-      setEditName(user.name);
-      setEditPhone(user.phone);
+      setEditName(user.name || '');
+      setEditPhone(user.phone || '');
     }
   }, [user]);
 
@@ -188,21 +188,39 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   };
 
   const handleConfirmSignOut = () => {
-    Alert.alert(
-      'Sign Out of RailQuick?',
-      'Are you sure you want to sign out? You will need to sign in again with your Google account to access your orders and seat deliveries.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: async () => {
-            await authSignOut();
-            onSignOut();
+    const executeSignOut = async () => {
+      try {
+        await authSignOut();
+      } catch (err) {
+        console.warn('Sign out error:', err);
+      }
+      onSignOut();
+    };
+
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      const confirmed =
+        typeof window.confirm === 'function'
+          ? window.confirm(
+              'Are you sure you want to sign out of RailQuick? You will need to sign in again with your Google account to access your orders.'
+            )
+          : true;
+      if (confirmed) {
+        executeSignOut();
+      }
+    } else {
+      Alert.alert(
+        'Sign Out of RailQuick?',
+        'Are you sure you want to sign out? You will need to sign in again with your Google account to access your orders and seat deliveries.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Sign Out',
+            style: 'destructive',
+            onPress: executeSignOut,
           },
-        },
-      ]
-    );
+        ]
+      );
+    }
   };
 
   /**
@@ -344,7 +362,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           {/* Centered Avatar */}
           <View style={styles.centeredAvatarContainer}>
             <View style={styles.avatarCircleLarge}>
-              {user.avatarUrl ? (
+              {user?.avatarUrl ? (
                 <Image
                   source={{ uri: user.avatarUrl }}
                   style={styles.avatarImageLarge}
@@ -352,7 +370,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 />
               ) : (
                 <Text style={styles.avatarInitialLarge}>
-                  {user.name ? user.name.charAt(0).toUpperCase() : (user.email ? user.email.charAt(0).toUpperCase() : 'U')}
+                  {user?.name ? user.name.charAt(0).toUpperCase() : (user?.email ? user.email.charAt(0).toUpperCase() : 'U')}
                 </Text>
               )}
               <View style={styles.verifiedTickLarge}>
@@ -364,7 +382,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           {/* User Name / Account Title */}
           <View style={styles.userNameRow}>
             <Text style={styles.accountHeading}>
-              {user.name || (user.email ? user.email.split('@')[0] : 'Passenger Profile')}
+              {user?.name || (user?.email ? user.email.split('@')[0] : 'Passenger Profile')}
             </Text>
             <TouchableOpacity
               activeOpacity={0.7}
@@ -377,7 +395,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           </View>
 
           {/* User Google Email */}
-          {user.email ? (
+          {user?.email ? (
             <View style={styles.userEmailRow}>
               <Mail size={13} color="#64748B" />
               <Text style={styles.userEmailText}>{user.email}</Text>
@@ -385,7 +403,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           ) : null}
 
           {/* Phone Number & IRCTC Badge */}
-          {user.phone ? (
+          {user?.phone ? (
             <Text style={styles.userPhoneSubtitle}>
               {user.phone.startsWith('+91') ? user.phone : `+91 ${user.phone}`}
             </Text>
@@ -610,7 +628,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             <View style={styles.groupedRowTextCol}>
               <Text style={styles.groupedRowTitle}>Profile & passenger details</Text>
               <Text style={styles.groupedRowSub}>
-                {user.name || 'Passenger'} • {user.phone ? (user.phone.startsWith('+91') ? user.phone : `+91 ${user.phone}`) : 'Add phone at checkout'}
+                {user?.name || 'Passenger'} • {user?.phone ? (user.phone.startsWith('+91') ? user.phone : `+91 ${user.phone}`) : 'Add phone at checkout'}
               </Text>
             </View>
             <ChevronRight size={16} color="#94A3B8" strokeWidth={2.2} />
@@ -1080,7 +1098,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
               <Text style={[styles.inputLabel, { marginTop: 12 }]}>EMAIL ADDRESS (GOOGLE ACCOUNT)</Text>
               <View style={[styles.modalTextInput, styles.disabledInput]}>
-                <Text style={styles.disabledInputText}>{user.email || 'Connected Google Account'}</Text>
+                <Text style={styles.disabledInputText}>{user?.email || 'Connected Google Account'}</Text>
               </View>
 
               <TouchableOpacity

@@ -212,15 +212,32 @@ class AuthService {
       authProvider: 'google',
       isVerified: false,
     };
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && window.localStorage) {
       try {
-        localStorage.removeItem('railquick_token');
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('token');
-        localStorage.removeItem('railquick_user_name');
-        localStorage.removeItem('railquick_user_email');
-        localStorage.removeItem('railquick_user_phone');
-        localStorage.removeItem('railquick_user_avatar');
+        const keysToRemove = [
+          'railquick_token',
+          'access_token',
+          'token',
+          'railquick_user_name',
+          'railquick_user_email',
+          'railquick_user_phone',
+          'railquick_user_avatar',
+          'supabase.auth.token',
+          'sb-access-token',
+          'sb-refresh-token',
+        ];
+        keysToRemove.forEach((key) => {
+          try {
+            localStorage.removeItem(key);
+          } catch {}
+        });
+
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+          const key = localStorage.key(i);
+          if (key && (key.startsWith('sb-') || key.toLowerCase().includes('supabase'))) {
+            localStorage.removeItem(key);
+          }
+        }
       } catch {}
     }
   }
