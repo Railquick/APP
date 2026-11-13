@@ -1,11 +1,12 @@
 import React from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useOrder } from '../context/OrderContext';
 import { useJourney } from '../context/JourneyContext';
 import CheckoutHeader from '../components/common/CheckoutHeader';
 import StepProgressHeader from '../components/common/StepProgressHeader';
 import SuccessHeadlineBanner from '../components/tracking/SuccessHeadlineBanner';
+import RunnerLiveStatusCard from '../components/tracking/RunnerLiveStatusCard';
 import TrainHaltHeroCard from '../components/tracking/TrainHaltHeroCard';
 import StationFulfillmentTimeline from '../components/tracking/StationFulfillmentTimeline';
 import RunnerProfileCard from '../components/tracking/RunnerProfileCard';
@@ -82,8 +83,7 @@ export const OrderConfirmationScreen: React.FC<OrderConfirmationScreenProps> = (
         onBackPress={onNavigateHome}
       />
 
-      {/* Sticky Step Progress Tracker (Step 3 Active) */}
-      <StepProgressHeader currentStep={3} />
+      {/* Step Progress Tracker removed per design update */}
 
       {/* Scrollable Tracking Content */}
       <ScrollView
@@ -97,6 +97,12 @@ export const OrderConfirmationScreen: React.FC<OrderConfirmationScreenProps> = (
             orderId={orderId}
             statusBadge={activeOrder?.statusBadge || 'Placed - Delivery at Hazrat Nizamuddin'}
             deliveryOtp={otp}
+          />
+
+          {/* Runner Live Status — outside coach, waiting for train */}
+          <RunnerLiveStatusCard
+            coach={currentJourney.coach}
+            station={currentJourney.station}
           />
 
           {/* Train, Berth & Station Countdown Hero Card */}

@@ -174,15 +174,6 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
             >
               <Mic size={18} color="#64748B" />
             </TouchableOpacity>
-
-            {/* Scan Tool */}
-            <TouchableOpacity
-              onPress={handleScanPress}
-              style={styles.toolBtn}
-              hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
-            >
-              <ScanBarcode size={18} color="#64748B" />
-            </TouchableOpacity>
           </View>
         </View>
 

@@ -70,7 +70,7 @@ export const RunnerProfileCard: React.FC<RunnerProfileCardProps> = ({ runner }) 
           onPress={handleChat}
         >
           <MessageSquare size={16} color="#006b2f" />
-          <Text style={styles.actionBtnText}>In-App Chat</Text>
+          <Text style={styles.actionBtnText}>Chat</Text>
         </TouchableOpacity>
       </View>
 

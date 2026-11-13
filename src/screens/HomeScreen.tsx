@@ -569,7 +569,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
       {/* PERSISTENT FLOATING CART BAR */}
       <FloatingCartBar
-        bottomOffset={96}
+        bottomOffset={isNavHidden ? 16 : 96}
         onPress={onNavigateToCart}
       />
 

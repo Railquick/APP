@@ -98,7 +98,7 @@ export const StationComingSoonScreen: React.FC<StationComingSoonScreenProps> = (
       <StatusBar style="dark" />
 
       <Image
-        source={require('../assets/images/coming_soon_runner.jpg')}
+        source={require('../assets/images/hq.png')}
         style={StyleSheet.absoluteFill}
         contentFit="cover"
         accessible

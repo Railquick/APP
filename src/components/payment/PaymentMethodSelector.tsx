@@ -1,8 +1,38 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { CreditCard, Check } from 'lucide-react-native';
-import { PAYMENT_METHODS } from '../../data/paymentMethods';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { Image } from 'expo-image';
+import { CreditCard, Lock } from 'lucide-react-native';
 import { PaymentMethodId } from '../../types/payment';
+
+interface PaymentMethod {
+  id: PaymentMethodId;
+  title: string;
+  description: string;
+  badge?: string;
+  badgeType?: 'fastest' | 'seat';
+  chips: string[];
+  disabled?: boolean;
+}
+
+const METHODS: PaymentMethod[] = [
+  {
+    id: 'razorpay',
+    title: 'PhonePe',
+    badge: '⚡ Recommended',
+    badgeType: 'fastest',
+    description: 'Pay instantly via PhonePe UPI. Secure, fast, and instant confirmation.',
+    chips: ['UPI', 'PhonePe', 'GPay', 'Paytm', 'Cards'],
+  },
+  {
+    id: 'cod',
+    title: 'Cash on Delivery',
+    badge: 'COD',
+    badgeType: 'seat',
+    description: 'Pay cash to the delivery runner at your berth.',
+    chips: ['Cash', 'Pay on Arrival'],
+    disabled: true,
+  },
+];
 
 interface PaymentMethodSelectorProps {
   selectedMethod: PaymentMethodId;
@@ -19,6 +49,18 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
   berth,
   station,
 }) => {
+  const handleMethodPress = (method: PaymentMethod) => {
+    if (method.disabled) {
+      Alert.alert(
+        'Not Available',
+        'Cash on Delivery is not available during the testing phase. Please use PhonePe UPI to place your order.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+    onSelectMethod(method.id);
+  };
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -35,40 +77,58 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
 
       {/* Methods List */}
       <View style={styles.cardsList}>
-        {PAYMENT_METHODS.map((method) => {
+        {METHODS.map((method) => {
           const isSelected = selectedMethod === method.id;
-
-          // Dynamically tailor descriptions with seat / station
-          const description =
-            method.id === 'cod'
-              ? `Hand exact cash or scan the delivery runner's live QR at Berth ${berth} during ${station} halt.`
-              : method.description;
+          const isDisabled = !!method.disabled;
 
           return (
             <TouchableOpacity
               key={method.id}
-              activeOpacity={0.9}
-              onPress={() => onSelectMethod(method.id)}
+              activeOpacity={isDisabled ? 0.6 : 0.9}
+              onPress={() => handleMethodPress(method)}
               style={[
                 styles.methodCard,
                 isSelected ? styles.cardActive : styles.cardInactive,
+                isDisabled && styles.cardDisabled,
               ]}
             >
-              <View style={styles.cardHeader}>
-                {/* Radio Circle */}
-                <View
-                  style={[
-                    styles.radioCircle,
-                    isSelected ? styles.radioCircleActive : styles.radioCircleInactive,
-                  ]}
-                >
-                  {isSelected && <View style={styles.radioInnerDot} />}
+              {/* Disabled lock banner */}
+              {isDisabled && (
+                <View style={styles.disabledBanner}>
+                  <Lock size={11} color="#9CA3AF" strokeWidth={2.5} />
+                  <Text style={styles.disabledBannerText}>Not available in testing phase</Text>
                 </View>
+              )}
+
+              <View style={styles.cardHeader}>
+                {/* Radio Circle / Lock icon */}
+                {isDisabled ? (
+                  <View style={[styles.radioCircle, styles.radioCircleDisabled]}>
+                    <Lock size={10} color="#9CA3AF" strokeWidth={2.5} />
+                  </View>
+                ) : (
+                  <View
+                    style={[
+                      styles.radioCircle,
+                      isSelected ? styles.radioCircleActive : styles.radioCircleInactive,
+                    ]}
+                  >
+                    {isSelected && <View style={styles.radioInnerDot} />}
+                  </View>
+                )}
 
                 {/* Details */}
                 <View style={styles.cardContent}>
                   <View style={styles.cardTitleRow}>
-                    <Text style={styles.cardTitle} numberOfLines={1}>
+                    {/* Real PhonePe logo */}
+                    {method.id === 'razorpay' && (
+                      <Image
+                        source={require('../../assets/images/Phonepaylogo.png')}
+                        style={styles.phonepeLogoImage}
+                        contentFit="contain"
+                      />
+                    )}
+                    <Text style={[styles.cardTitle, isDisabled && styles.cardTitleDisabled]} numberOfLines={1}>
                       {method.title}
                     </Text>
 
@@ -79,6 +139,7 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
                           method.badgeType === 'fastest'
                             ? styles.badgeFastest
                             : styles.badgeSeat,
+                          isDisabled && styles.badgeDisabled,
                         ]}
                       >
                         <Text
@@ -87,6 +148,7 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
                             method.badgeType === 'fastest'
                               ? styles.badgeTextFastest
                               : styles.badgeTextSeat,
+                            isDisabled && styles.badgeTextDisabled,
                           ]}
                         >
                           {method.badge}
@@ -95,13 +157,15 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
                     )}
                   </View>
 
-                  <Text style={styles.cardDescription}>{description}</Text>
+                  <Text style={[styles.cardDescription, isDisabled && styles.cardDescriptionDisabled]}>
+                    {method.description}
+                  </Text>
 
                   {/* Brand Chips */}
                   <View style={styles.chipsRow}>
                     {method.chips.map((chip, idx) => (
-                      <View key={idx} style={styles.chipPill}>
-                        <Text style={styles.chipText}>{chip}</Text>
+                      <View key={idx} style={[styles.chipPill, isDisabled && styles.chipPillDisabled]}>
+                        <Text style={[styles.chipText, isDisabled && styles.chipTextDisabled]}>{chip}</Text>
                       </View>
                     ))}
                   </View>
@@ -258,6 +322,57 @@ const styles = StyleSheet.create({
     fontSize: 10.5,
     fontWeight: '600',
     color: '#3e4a3e',
+  },
+  // Disabled state styles
+  cardDisabled: {
+    opacity: 0.72,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#F9FAFB',
+  },
+  cardTitleDisabled: {
+    color: '#9CA3AF',
+  },
+  cardDescriptionDisabled: {
+    color: '#9CA3AF',
+  },
+  radioCircleDisabled: {
+    borderWidth: 1.5,
+    borderColor: '#D1D5DB',
+    backgroundColor: '#F3F4F6',
+  },
+  badgeDisabled: {
+    backgroundColor: '#E5E7EB',
+  },
+  badgeTextDisabled: {
+    color: '#9CA3AF',
+  },
+  chipPillDisabled: {
+    backgroundColor: '#F3F4F6',
+  },
+  chipTextDisabled: {
+    color: '#9CA3AF',
+  },
+  disabledBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginBottom: 10,
+    alignSelf: 'flex-start',
+  },
+  disabledBannerText: {
+    fontSize: 10,
+    color: '#6B7280',
+    fontWeight: '600',
+  },
+  phonepeLogoImage: {
+    width: 36,
+    height: 36,
+    marginRight: 6,
+    borderRadius: 8,
   },
 });
 

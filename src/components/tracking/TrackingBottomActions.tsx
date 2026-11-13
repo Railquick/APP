@@ -28,7 +28,7 @@ export const TrackingBottomActions: React.FC<TrackingBottomActionsProps> = ({
         onPress={handleNeedHelp}
       >
         <Headset size={18} color="#ba1a1a" />
-        <Text style={styles.helpText}>Need Help / Contact Station Master</Text>
+        <Text style={styles.helpText}>Need Help</Text>
       </TouchableOpacity>
 
       {/* Back to Home Store */}

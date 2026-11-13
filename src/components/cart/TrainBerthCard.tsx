@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 import { Train, MapPin, Zap } from 'lucide-react-native';
 import { JourneyDetails } from '../../types/journey';
 
@@ -10,23 +11,27 @@ interface TrainBerthCardProps {
 export const TrainBerthCard: React.FC<TrainBerthCardProps> = ({ journey }) => {
   return (
     <View style={styles.card}>
-      {/* Top row: Train Name, PNR & Confirmed Badge */}
+      {/* Background image */}
+      <Image
+        source={require('../../assets/cards/Cart.png')}
+        style={StyleSheet.absoluteFill}
+        contentFit="cover"
+        accessibilityIgnoresInvertColors
+      />
+      {/* Stronger dark overlay so text is always readable */}
+      <View style={styles.overlay} />
+
+      {/* Top row: Train Name & PNR — no badge */}
       <View style={styles.topRow}>
         <View style={styles.trainInfo}>
           <View style={styles.trainTitleRow}>
-            <Train size={17} color="#ffe08f" />
+            <Train size={17} color="#FFD580" />
             <Text style={styles.trainTitle} numberOfLines={1}>
               {journey.trainName.toUpperCase()}
             </Text>
           </View>
           <Text style={styles.pnrText}>
             PNR: <Text style={styles.pnrHighlight}>{journey.pnr}</Text>
-          </Text>
-        </View>
-
-        <View style={styles.confirmedBadge}>
-          <Text style={styles.confirmedBadgeText}>
-            {journey.statusText || 'CONFIRMED BERTH'}
           </Text>
         </View>
       </View>
@@ -49,7 +54,7 @@ export const TrainBerthCard: React.FC<TrainBerthCardProps> = ({ journey }) => {
         {/* Right: Next Station */}
         <View style={styles.gridBox}>
           <View style={styles.stationLabelRow}>
-            <MapPin size={13} color="#ffe08f" />
+            <MapPin size={13} color="#FFD580" />
             <Text style={styles.gridLabel}>NEXT STATION</Text>
           </View>
           <Text style={styles.stationTitle} numberOfLines={1}>
@@ -63,7 +68,7 @@ export const TrainBerthCard: React.FC<TrainBerthCardProps> = ({ journey }) => {
 
       {/* Live Halt Micro-Banner */}
       <View style={styles.haltBanner}>
-        <Zap size={16} color="#ffe08f" style={styles.boltIcon} />
+        <Zap size={16} color="#FFD580" style={styles.boltIcon} />
         <Text style={styles.haltBannerText}>
           Darkstore runner enters{' '}
           <Text style={styles.coachHighlight}>Coach {journey.coach}</Text> right as
@@ -76,16 +81,21 @@ export const TrainBerthCard: React.FC<TrainBerthCardProps> = ({ journey }) => {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#006b2f',
     borderRadius: 16,
     padding: 16,
-    shadowColor: '#006b2f',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.18,
-    shadowRadius: 10,
-    elevation: 4,
+    shadowOpacity: 0.28,
+    shadowRadius: 12,
+    elevation: 5,
     position: 'relative',
     overflow: 'hidden',
+    minHeight: 160,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(10, 20, 10, 0.72)',
+    borderRadius: 16,
   },
   topRow: {
     flexDirection: 'row',
@@ -103,35 +113,23 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   trainTitle: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: 0.5,
   },
   pnrText: {
     fontSize: 12,
-    color: '#6cdd86',
-    marginTop: 3,
+    color: 'rgba(255,255,255,0.75)',
+    marginTop: 4,
   },
   pnrHighlight: {
     fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  confirmedBadge: {
-    backgroundColor: '#95f4aa',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 999,
-  },
-  confirmedBadgeText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#005226',
-    letterSpacing: 0.2,
+    color: '#FFD580',
   },
   divider: {
     height: 1,
-    backgroundColor: 'rgba(136, 250, 160, 0.25)',
+    backgroundColor: 'rgba(255,255,255,0.18)',
     marginBottom: 10,
   },
   gridRow: {
@@ -140,15 +138,17 @@ const styles = StyleSheet.create({
   },
   gridBox: {
     flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 10,
     paddingVertical: 8,
     paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
   },
   gridLabel: {
     fontSize: 9.5,
     fontWeight: '700',
-    color: '#6cdd86',
+    color: '#FFD580',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
@@ -165,8 +165,8 @@ const styles = StyleSheet.create({
   },
   seatSubtitle: {
     fontSize: 11,
-    color: 'rgba(255, 255, 255, 0.85)',
-    marginTop: 1,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginTop: 2,
   },
   stationTitle: {
     fontSize: 14.5,
@@ -176,32 +176,34 @@ const styles = StyleSheet.create({
   },
   stationSubtitle: {
     fontSize: 11,
-    color: '#ffe08f',
+    color: '#FFD580',
     fontWeight: '700',
-    marginTop: 1,
+    marginTop: 2,
   },
   haltBanner: {
     marginTop: 10,
-    backgroundColor: 'rgba(0, 135, 62, 0.85)',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 9,
-    paddingVertical: 6,
+    paddingVertical: 7,
     paddingHorizontal: 10,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255,213,128,0.3)',
   },
   boltIcon: {
     flexShrink: 0,
   },
   haltBannerText: {
     fontSize: 11.5,
-    color: '#FFFFFF',
+    color: 'rgba(255,255,255,0.9)',
     flex: 1,
     lineHeight: 16,
   },
   coachHighlight: {
     fontWeight: '800',
-    color: '#ffe08f',
+    color: '#FFD580',
   },
 });
 

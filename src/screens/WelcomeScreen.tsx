@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
   authActionSection: {
     width: '100%',
     paddingHorizontal: 24,
-    marginBottom: 8,
+    marginBottom: 50,
   },
   googleButton: {
     width: '100%',
@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 5,
-    elevation: 2,
+    elevation: 3,
   },
   googleButtonContent: {
     flexDirection: 'row',

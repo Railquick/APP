@@ -650,46 +650,33 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
-              {/* Coach & Berth Inputs */}
+              {/* Coach & Berth — read-only, pre-filled from PNR */}
               <View style={styles.twoInputsRow}>
                 <View style={styles.halfInputCol}>
                   <Text style={styles.inputLabel}>COACH</Text>
-                  <TextInput
-                    value={seatCoach}
-                    onChangeText={setSeatCoach}
-                    placeholder="e.g. B2, A1, C3"
-                    placeholderTextColor="#94A3B8"
-                    style={styles.modalTextInput}
-                    autoCapitalize="characters"
-                    maxLength={5}
-                  />
+                  <View style={[styles.modalTextInput, styles.disabledInput]}>
+                    <Text style={styles.disabledInputText}>{seatCoach || journey.coach || 'B2'}</Text>
+                  </View>
                 </View>
 
                 <View style={styles.halfInputCol}>
                   <Text style={styles.inputLabel}>BERTH / SEAT NO.</Text>
-                  <TextInput
-                    value={seatBerth}
-                    onChangeText={setSeatBerth}
-                    placeholder="e.g. 36"
-                    placeholderTextColor="#94A3B8"
-                    style={styles.modalTextInput}
-                    keyboardType="numeric"
-                    maxLength={4}
-                  />
+                  <View style={[styles.modalTextInput, styles.disabledInput]}>
+                    <Text style={styles.disabledInputText}>{seatBerth || journey.berth || '36'}</Text>
+                  </View>
                 </View>
               </View>
 
-              {/* Berth Type */}
+              {/* Berth Type — read-only chips (auto-detected from PNR) */}
               <Text style={styles.inputLabel}>BERTH POSITION / TYPE</Text>
               <View style={styles.berthTypeChipsRow}>
                 {['Lower Berth (LB)', 'Middle Berth (MB)', 'Upper Berth (UB)', 'Side Lower (SL)', 'Window Seat (WS)'].map((type) => (
-                  <TouchableOpacity
+                  <View
                     key={type}
-                    activeOpacity={0.8}
-                    onPress={() => setSeatBerthType(type)}
                     style={[
                       styles.berthTypeChip,
                       seatBerthType === type && styles.berthTypeChipActive,
+                      styles.berthTypeChipDisabled,
                     ]}
                   >
                     <Text
@@ -700,38 +687,27 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                     >
                       {type}
                     </Text>
-                  </TouchableOpacity>
+                  </View>
                 ))}
               </View>
 
-              {/* Station & Platform */}
+              {/* Station & Platform — read-only */}
               <Text style={[styles.inputLabel, { marginTop: 12 }]}>DELIVERY STATION</Text>
-              <TextInput
-                value={seatStation}
-                onChangeText={setSeatStation}
-                placeholder="e.g. Hazrat Nizamuddin (NZM)"
-                placeholderTextColor="#94A3B8"
-                style={styles.modalTextInput}
-              />
+              <View style={[styles.modalTextInput, styles.disabledInput]}>
+                <Text style={styles.disabledInputText}>{seatStation || journey.station || 'Hazrat Nizamuddin (NZM)'}</Text>
+              </View>
 
               <Text style={[styles.inputLabel, { marginTop: 10 }]}>PLATFORM</Text>
-              <TextInput
-                value={seatPlatform}
-                onChangeText={setSeatPlatform}
-                placeholder="e.g. PF 1"
-                placeholderTextColor="#94A3B8"
-                style={styles.modalTextInput}
-              />
+              <View style={[styles.modalTextInput, styles.disabledInput]}>
+                <Text style={styles.disabledInputText}>{seatPlatform || journey.platform || 'PF 1'}</Text>
+              </View>
 
-              {/* Save Button */}
-              <TouchableOpacity
-                activeOpacity={0.88}
-                onPress={handleSaveSeatDetails}
-                style={styles.saveBtn}
-              >
-                <Check size={16} color="#FFFFFF" strokeWidth={2.6} />
-                <Text style={styles.saveBtnText}>Save Seat Details</Text>
-              </TouchableOpacity>
+              {/* Info note */}
+              <View style={styles.lockedNoteRow}>
+                <Text style={styles.lockedNoteText}>
+                  🔒 These details are auto-detected from your PNR. To change them, re-enter your PNR on the home screen.
+                </Text>
+              </View>
             </ScrollView>
           </View>
         </View>
@@ -1489,6 +1465,23 @@ const styles = StyleSheet.create({
     fontSize: 13.5,
     color: '#64748B',
     fontWeight: '500',
+  },
+  berthTypeChipDisabled: {
+    opacity: 0.75,
+  },
+  lockedNoteRow: {
+    backgroundColor: '#FFF7ED',
+    borderRadius: 8,
+    padding: 10,
+    marginTop: 14,
+    borderWidth: 1,
+    borderColor: '#FED7AA',
+  },
+  lockedNoteText: {
+    fontSize: 11,
+    color: '#92400E',
+    fontWeight: '500',
+    lineHeight: 16,
   },
 
   // Modal Styles

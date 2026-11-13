@@ -11,7 +11,6 @@ import { ShoppingBag, ArrowLeft } from 'lucide-react-native';
 import { useCart } from '../context/CartContext';
 import { useJourney } from '../context/JourneyContext';
 import CheckoutHeader from '../components/common/CheckoutHeader';
-import StepProgressHeader from '../components/common/StepProgressHeader';
 import TrainBerthCard from '../components/cart/TrainBerthCard';
 import CartItemsList from '../components/cart/CartItemsList';
 import BerthDeliveryPromise from '../components/cart/BerthDeliveryPromise';
@@ -45,8 +44,7 @@ export const CartScreen: React.FC<CartScreenProps> = ({
         onBackPress={onNavigateBack}
       />
 
-      {/* Step Progress Tracker (Step 1 Active) */}
-      <StepProgressHeader currentStep={1} />
+      {/* Step Progress Tracker removed per design update */}
 
       {/* Scrollable Cart Content */}
       <ScrollView

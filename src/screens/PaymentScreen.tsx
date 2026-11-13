@@ -91,8 +91,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({
         onBackPress={onNavigateBack}
       />
 
-      {/* Step Progress Tracker (Step 2 Active) */}
-      <StepProgressHeader currentStep={2} />
+      {/* Step Progress Tracker removed per design update */}
 
       {/* Main Content */}
       <ScrollView

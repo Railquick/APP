@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Animated } from 'react-native';
 import { Image } from 'expo-image';
 import { ShoppingCart, ArrowRight } from 'lucide-react-native';
 import { useCart } from '../../context/CartContext';
@@ -42,6 +42,15 @@ export const FloatingCartBar: React.FC<FloatingCartBarProps> = ({
   onPress,
 }) => {
   const { totalCount, totalPrice, items } = useCart();
+  const animatedBottom = useRef(new Animated.Value(bottomOffset)).current;
+
+  useEffect(() => {
+    Animated.timing(animatedBottom, {
+      toValue: bottomOffset,
+      duration: 260,
+      useNativeDriver: false,
+    }).start();
+  }, [bottomOffset]);
 
   if (totalCount === 0) return null;
 
@@ -65,7 +74,7 @@ export const FloatingCartBar: React.FC<FloatingCartBarProps> = ({
   const extraCount = items.length > MAX_SHOWN ? items.length - MAX_SHOWN : 0;
 
   return (
-    <View style={[styles.wrapper, { bottom: bottomOffset }]} pointerEvents="box-none">
+    <Animated.View style={[styles.wrapper, { bottom: animatedBottom }]} pointerEvents="box-none">
       <TouchableOpacity
         activeOpacity={0.92}
         onPress={handlePress}
@@ -120,7 +129,7 @@ export const FloatingCartBar: React.FC<FloatingCartBarProps> = ({
           <ArrowRight size={16} color="#159447" strokeWidth={2.6} />
         </View>
       </TouchableOpacity>
-    </View>
+    </Animated.View>
   );
 };
 
