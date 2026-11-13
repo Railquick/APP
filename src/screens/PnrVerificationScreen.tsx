@@ -41,6 +41,7 @@ import {
 } from '../data/pnrDemoData';
 import { useJourney } from '../context/JourneyContext';
 import { verifyPNR } from '../services/trainService';
+import { SUPPORT_CONFIG } from '../config/constants';
 
 interface PnrVerificationScreenProps {
   onContinueToMarketplace: () => void;
@@ -214,7 +215,7 @@ export const PnrVerificationScreen: React.FC<PnrVerificationScreenProps> = ({
       case 'helpline':
         Alert.alert(
           'Railways Helpline',
-          'Railway Security / Medical / Assistance: Dial 139.\nRailQuick Coach Support: +91 800-RAIL-QUICK'
+          `Railway Security / Medical / Assistance: Dial 139.\nRailQuick Coach Support: ${SUPPORT_CONFIG.PHONE_DISPLAY}`
         );
         break;
     }

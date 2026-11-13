@@ -9,6 +9,7 @@ import {
   TextInput,
   Alert,
   Platform,
+  Linking,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -47,6 +48,7 @@ import { useOrder } from '../context/OrderContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { SUPPORT_CONFIG } from '../config/constants';
 
 interface ProfileScreenProps {
   onNavigateBack: () => void;
@@ -201,6 +203,109 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         },
       ]
     );
+  };
+
+  /**
+   * Launch 24x7 WhatsApp support with pre-filled passenger & journey context
+   */
+  const handleStartLiveChat = async () => {
+    const messageLines: string[] = [
+      'Hi RailQuick Support, I need assistance with my journey / order at Hazrat Nizamuddin (NZM).',
+      '',
+    ];
+
+    // Logged-in passenger metadata
+    const passengerParts: string[] = [];
+    if (user?.name) passengerParts.push(`Name: ${user.name}`);
+    if (user?.phone) passengerParts.push(`Phone: ${user.phone}`);
+    else if (user?.email) passengerParts.push(`Email: ${user.email}`);
+    if (passengerParts.length > 0) {
+      messageLines.push(`👤 Passenger: ${passengerParts.join(' | ')}`);
+    }
+
+    // Active train details from JourneyContext
+    const trainParts: string[] = [];
+    if (journey?.trainName || journey?.trainNumber) {
+      trainParts.push(`Train: ${journey.trainName || ''} (#${journey.trainNumber || ''})`.trim());
+    }
+    if (journey?.coach || journey?.berth) {
+      trainParts.push(`Seat: Coach ${journey.coach || 'B2'}, Berth ${journey.berth || '36'}`);
+    }
+    if (journey?.pnr) {
+      trainParts.push(`PNR: ${journey.pnr}`);
+    }
+    if (journey?.station) {
+      trainParts.push(`Station: ${journey.station}`);
+    }
+
+    if (trainParts.length > 0) {
+      messageLines.push('🚆 Train & Berth Context:');
+      trainParts.forEach((part) => messageLines.push(`  • ${part}`));
+    }
+
+    messageLines.push('', 'Please connect me with a support desk agent.');
+    const fullMessage = messageLines.join('\n');
+
+    const cleanNumber = SUPPORT_CONFIG.WHATSAPP_NUMBER.replace(/[^0-9]/g, '');
+    const waUrl = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(fullMessage)}`;
+
+    try {
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.open(waUrl, '_blank', 'noopener,noreferrer');
+      } else {
+        const canOpen = await Linking.canOpenURL(waUrl).catch(() => true);
+        if (canOpen) {
+          await Linking.openURL(waUrl);
+        } else {
+          await Linking.openURL(
+            `https://api.whatsapp.com/send?phone=${cleanNumber}&text=${encodeURIComponent(fullMessage)}`
+          );
+        }
+      }
+    } catch (err) {
+      console.warn('[RailQuick Support] Failed to open WhatsApp URL:', err);
+      if (typeof window !== 'undefined') {
+        window.open(waUrl, '_blank');
+      }
+    }
+  };
+
+  /**
+   * Universal safe phone dialer for RailQuick Support Desk
+   */
+  const handleCallSupport = async (phoneNumber: string = SUPPORT_CONFIG.PHONE_NUMBER) => {
+    const telUrl = `tel:${phoneNumber}`;
+    try {
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.location.href = telUrl;
+      } else {
+        const canOpen = await Linking.canOpenURL(telUrl).catch(() => true);
+        if (canOpen) {
+          await Linking.openURL(telUrl);
+        }
+      }
+    } catch (err) {
+      console.warn('[RailQuick Support] Failed to dial support number:', err);
+    }
+  };
+
+  /**
+   * Dial Indian Railways National Helpline 139
+   */
+  const handleCallRailway139 = async () => {
+    const telUrl = 'tel:139';
+    try {
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.location.href = telUrl;
+      } else {
+        const canOpen = await Linking.canOpenURL(telUrl).catch(() => true);
+        if (canOpen) {
+          await Linking.openURL(telUrl);
+        }
+      }
+    } catch (err) {
+      console.warn('[RailQuick Support] Failed to dial 139:', err);
+    }
   };
 
   return (
@@ -568,7 +673,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
               </TouchableOpacity>
             </View>
 
-            {/* Chat with Support Box (UI Ready for chat integration) */}
+            {/* Chat with Support Box (WhatsApp Live Integration) */}
             <View style={styles.chatSupportBox}>
               <View style={styles.chatIconCircle}>
                 <MessageSquare size={24} color="#159447" strokeWidth={2.3} />
@@ -576,18 +681,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
               <View style={styles.chatInfoCol}>
                 <Text style={styles.chatBoxTitle}>Live Support Chat</Text>
                 <Text style={styles.chatBoxSubtitle}>
-                  Chat directly with our railway station desk for order status, runner ETA, or item changes.
+                  Chat directly with our NZM station dispatch desk on WhatsApp for order status, runner ETA, or item changes.
                 </Text>
               </View>
               <TouchableOpacity
                 activeOpacity={0.88}
-                onPress={() => {
-                  Alert.alert(
-                    'Support Chat',
-                    'Connecting you to our station dispatch desk. A support agent will respond in less than 60 seconds.',
-                    [{ text: 'OK' }]
-                  );
-                }}
+                onPress={handleStartLiveChat}
                 style={styles.startChatBtn}
               >
                 <Text style={styles.startChatBtnText}>Start Chat</Text>
@@ -599,9 +698,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
             <TouchableOpacity
               activeOpacity={0.8}
-              onPress={() => {
-                Alert.alert('Calling Railway Helpline', 'Dialing 139 for Indian Railways passenger support.');
-              }}
+              onPress={() => handleCallSupport(SUPPORT_CONFIG.PHONE_NUMBER)}
               style={styles.helplineRow}
             >
               <View style={[styles.helpMiniIcon, { backgroundColor: '#E7F8EE' }]}>
@@ -609,16 +706,14 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
               </View>
               <View style={styles.helplineCol}>
                 <Text style={styles.helplineTitle}>RailQuick Express Desk</Text>
-                <Text style={styles.helplineNumber}>1800-245-8910 (Toll Free)</Text>
+                <Text style={styles.helplineNumber}>{SUPPORT_CONFIG.PHONE_DISPLAY} (24x7 Station Ops)</Text>
               </View>
-              <Text style={styles.callNowPill}>Call Free</Text>
+              <Text style={styles.callNowPill}>Call Now</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               activeOpacity={0.8}
-              onPress={() => {
-                Alert.alert('Indian Railways Official Helpline', 'Dialing 139 for Train Security and Medical Aid.');
-              }}
+              onPress={handleCallRailway139}
               style={styles.helplineRow}
             >
               <View style={[styles.helpMiniIcon, { backgroundColor: '#FEE2E2' }]}>
