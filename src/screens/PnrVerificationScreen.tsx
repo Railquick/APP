@@ -102,11 +102,12 @@ export const PnrVerificationScreen: React.FC<PnrVerificationScreenProps> = ({
         statusText: res.pnr_status || 'CONFIRMED BERTH',
         passengerName: 'Passenger',
         isLive: true,
+        arrivalTime: res.arrival_time || '16:30',
       };
 
       setVerifiedRecord(record);
 
-      // On success, update JourneyContext with returned train_name, train_number, coach, seat, and station_code ('NZM')
+      // On success, update JourneyContext with returned train_name, train_number, coach, seat, station_code ('NZM'), and arrivalTime
       setJourney({
         pnr: record.pnr,
         trainNumber: record.trainNumber,
@@ -124,6 +125,7 @@ export const PnrVerificationScreen: React.FC<PnrVerificationScreenProps> = ({
         scheduledArrivalMins: record.scheduledArrivalMins,
         haltDurationMins: record.haltDurationMins,
         statusText: record.statusText,
+        arrivalTime: record.arrivalTime,
       });
     } catch (err: any) {
       const errorMsg =
@@ -170,6 +172,7 @@ export const PnrVerificationScreen: React.FC<PnrVerificationScreenProps> = ({
       scheduledArrivalMins: verifiedRecord.scheduledArrivalMins,
       haltDurationMins: verifiedRecord.haltDurationMins,
       statusText: verifiedRecord.statusText,
+      arrivalTime: verifiedRecord.arrivalTime || '16:30',
     });
 
     // If station is NZM (Hazrat Nizamuddin) -> Marketplace

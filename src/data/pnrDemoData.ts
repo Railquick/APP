@@ -17,6 +17,7 @@ export interface PnrDemoRecord {
   statusText: string;
   passengerName: string;
   isLive: boolean; // true = delivers to berth now, false = coming soon
+  arrivalTime?: string;
 }
 
 export const DEMO_PNR_RECORDS: PnrDemoRecord[] = [
@@ -37,6 +38,7 @@ export const DEMO_PNR_RECORDS: PnrDemoRecord[] = [
     statusText: 'CONFIRMED BERTH',
     passengerName: 'Varun Sharma',
     isLive: true,
+    arrivalTime: '16:30',
   },
   {
     pnr: '4821-7739-12',

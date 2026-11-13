@@ -78,13 +78,20 @@ class OrderItemCreate(BaseModel):
 
 class OrderCreateRequest(BaseModel):
     user_id: Optional[str] = None
-    train_no: str
-    station_code: str
+    train_no: Optional[str] = None
+    trainNumber: Optional[str] = None
+    train_name: Optional[str] = None
+    trainName: Optional[str] = None
+    station_code: Optional[str] = None
+    station: Optional[str] = None
     coach: str
-    seat_no: str
+    seat_no: Optional[str] = None
+    seat: Optional[str] = None
     passenger_name: str = "Passenger"
     passenger_phone: str = Field(..., description="10-digit mobile number")
     pnr: Optional[str] = None
+    arrival_time: Optional[str] = None
+    arrivalTime: Optional[str] = None
     payment_method: str = "PAY_ON_DELIVERY"
     items: List[OrderItemCreate]
     simulated_time: Optional[str] = None
@@ -115,6 +122,7 @@ class VerifyDeliveryRequest(BaseModel):
     otp: str
 
 
+@router.post("", status_code=status.HTTP_201_CREATED)
 @router.post("/create", status_code=status.HTTP_201_CREATED)
 async def create_order(
     payload: OrderCreateRequest,
@@ -126,7 +134,13 @@ async def create_order(
             detail="Order must contain at least one item",
         )
 
-    station_code = payload.station_code.strip().upper()
+    train_no = (payload.train_no or payload.trainNumber or "12424").strip()
+    train_name = (payload.train_name or payload.trainName or "Dibrugarh Rajdhani Express").strip()
+    station_code = (payload.station_code or payload.station or "NZM").strip().upper()
+    coach = payload.coach.strip().upper()
+    seat_no = (payload.seat_no or payload.seat or "36").strip()
+    clean_pnr = (payload.pnr or "").replace("-", "").strip() or None
+    raw_arrival_time = (payload.arrival_time or payload.arrivalTime or "").strip() or None
 
     # 1. NZM Hub Capacity / Concurrency Limit Check
     if station_code == "NZM":
@@ -155,18 +169,18 @@ async def create_order(
         stop_res = (
             supabase.table("train_stops")
             .select("arrival_time, departure_time, halt_minutes, day_offset, stations(name, state, is_serviceable)")
-            .eq("train_no", payload.train_no.strip())
+            .eq("train_no", train_no)
             .eq("station_code", station_code)
             .execute()
         )
         if stop_res.data:
             stop_data = stop_res.data[0]
     except Exception as exc:
-        logger.warning(f"Error querying train_stops for train {payload.train_no} at {station_code}: {exc}")
+        logger.warning(f"Error querying train_stops for train {train_no} at {station_code}: {exc}")
 
     # Fallback for demo trains if Supabase is offline / not seeded
     if not stop_data:
-        if payload.train_no.strip() in ("12417", "12424"):
+        if train_no in ("12417", "12424"):
             demo_stops = {
                 ("12417", "NDLS"): {"arrival_time": None, "departure_time": "22:10", "halt_minutes": 0, "day_offset": 1},
                 ("12417", "ALJN"): {"arrival_time": "23:55", "departure_time": "23:57", "halt_minutes": 2, "day_offset": 1},
@@ -174,12 +188,12 @@ async def create_order(
                 ("12417", "PRYJ"): {"arrival_time": "07:00", "departure_time": None, "halt_minutes": 0, "day_offset": 2},
                 ("12424", "NZM"): {"arrival_time": "16:30", "departure_time": "16:35", "halt_minutes": 5, "day_offset": 1},
             }
-            stop_data = demo_stops.get((payload.train_no.strip(), station_code))
+            stop_data = demo_stops.get((train_no, station_code))
 
     if not stop_data:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Train {payload.train_no} does not service station {station_code}",
+            detail=f"Train {train_no} does not service station {station_code}",
         )
 
     scheduled_arrival = stop_data.get("arrival_time")
@@ -290,21 +304,54 @@ async def create_order(
     if not effective_user_id and current_user and isinstance(current_user, dict):
         effective_user_id = str(current_user.get("id"))
 
+    valid_uuid_user_id = None
+    if effective_user_id:
+        try:
+            valid_uuid_user_id = str(uuid.UUID(str(effective_user_id)))
+        except (ValueError, TypeError):
+            valid_uuid_user_id = None
+
+    # Calculate journey date and scheduled arrival ISO
+    now_ist = datetime.now(IST_TIMEZONE)
+    journey_date_str = now_ist.strftime("%Y-%m-%d")
+
+    target_arrival_time = raw_arrival_time or scheduled_arrival or "16:30"
+    arrival_iso = None
+    try:
+        if target_arrival_time and ":" in target_arrival_time:
+            t_parts = target_arrival_time.strip().split(":")
+            arrival_dt = datetime(
+                now_ist.year,
+                now_ist.month,
+                now_ist.day,
+                int(t_parts[0]),
+                int(t_parts[1]),
+                0,
+                tzinfo=IST_TIMEZONE,
+            )
+            arrival_iso = arrival_dt.isoformat()
+        elif target_arrival_time:
+            arrival_iso = datetime.fromisoformat(target_arrival_time).isoformat()
+    except Exception:
+        arrival_iso = datetime(now_ist.year, now_ist.month, now_ist.day, 16, 30, 0, tzinfo=IST_TIMEZONE).isoformat()
+
     # 5. Insert into orders table with passenger details & payment method
     order_data = {
-        "user_id": effective_user_id,
-        "train_no": payload.train_no.strip(),
+        "user_id": valid_uuid_user_id,
+        "train_no": train_no,
         "station_code": station_code,
-        "coach": payload.coach.strip().upper(),
-        "seat_no": payload.seat_no.strip(),
+        "coach": coach,
+        "seat_no": seat_no,
         "passenger_name": payload.passenger_name.strip() if payload.passenger_name else "Passenger",
         "passenger_phone": payload.passenger_phone.strip(),
-        "pnr": payload.pnr.strip() if payload.pnr else None,
+        "pnr": clean_pnr,
         "payment_method": payload.payment_method.strip(),
         "total_amount": total_amount,
         "payment_status": "PENDING",
         "delivery_status": "PLACED",
         "delivery_otp": delivery_otp,
+        "journey_date": journey_date_str,
+        "expected_arrival": arrival_iso,
     }
 
     try:
@@ -329,15 +376,56 @@ async def create_order(
     order_record = order_insert_res.data[0]
     order_id = order_record["id"]
 
+    # 6. Persist Journey & PNR data into railquick_train_requests for delivery runner / vendor interoperability
+    train_request_data = {
+        "id": order_id,
+        "user_id": str(effective_user_id) if effective_user_id else str(uuid.uuid4()),
+        "user_name": str(payload.passenger_name or "Passenger").strip(),
+        "user_phone": payload.passenger_phone.strip(),
+        "user_email": (current_user.get("email") if isinstance(current_user, dict) else None),
+        "train_name": train_name,
+        "train_number": train_no,
+        "journey_date": journey_date_str,
+        "status": "requested",
+        "pnr_reference": clean_pnr,
+        "pnr_verified": bool(clean_pnr),
+        "coach_number": coach,
+        "seat_number": seat_no,
+        "arrival_station_code": station_code,
+        "arrival_station_name": "Hazrat Nizamuddin" if station_code == "NZM" else station_code,
+        "scheduled_arrival_at": arrival_iso,
+        "estimated_arrival_at": arrival_iso,
+    }
+
+    extended_request_data = {
+        **train_request_data,
+        "pnr": clean_pnr,
+        "coach": coach,
+        "seat": seat_no,
+        "station_code": station_code,
+        "arrival_time": target_arrival_time or arrival_iso,
+    }
+
+    try:
+        supabase.table("railquick_train_requests").insert(extended_request_data).execute()
+        logger.info(f"Persisted train request {order_id} with extended columns into railquick_train_requests")
+    except Exception as e_ext:
+        logger.info(f"Extended columns not available in railquick_train_requests ({e_ext}); writing standard columns")
+        try:
+            supabase.table("railquick_train_requests").insert(train_request_data).execute()
+            logger.info(f"Persisted train request {order_id} with standard columns into railquick_train_requests")
+        except Exception as e_base:
+            logger.warning(f"Could not persist train request into railquick_train_requests: {e_base}")
+
     # Auto-sync phone number to profiles and users tables for authenticated customer
-    if effective_user_id and payload.passenger_phone:
+    if valid_uuid_user_id and payload.passenger_phone:
         clean_phone = payload.passenger_phone.strip()
         try:
-            supabase.table("profiles").upsert({"id": str(effective_user_id), "phone": clean_phone}).execute()
+            supabase.table("profiles").upsert({"id": valid_uuid_user_id, "phone": clean_phone}).execute()
         except Exception as exc:
             logger.warning("Could not sync phone to profiles table on order create: %s", exc)
         try:
-            supabase.table("users").update({"phone_number": clean_phone}).eq("id", str(effective_user_id)).execute()
+            supabase.table("users").update({"phone_number": clean_phone}).eq("id", valid_uuid_user_id).execute()
         except Exception:
             pass
 
@@ -372,6 +460,13 @@ async def create_order(
         "passenger_name": payload.passenger_name,
         "passenger_phone": payload.passenger_phone,
         "payment_method": payload.payment_method,
+        "train_number": train_no,
+        "train_name": train_name,
+        "station_code": station_code,
+        "coach": coach,
+        "seat": seat_no,
+        "pnr": clean_pnr,
+        "arrival_time": target_arrival_time,
         "items": items_insert_res.data or order_items_to_insert,
     }
 

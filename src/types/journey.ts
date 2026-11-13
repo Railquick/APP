@@ -15,4 +15,5 @@ export interface JourneyDetails {
   scheduledArrivalMins: number;
   haltDurationMins: number;
   statusText?: string;
+  arrivalTime?: string;
 }

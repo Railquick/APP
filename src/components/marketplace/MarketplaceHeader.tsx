@@ -197,6 +197,7 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
           coach: res.coach || journey.coach || 'B2',
           berth: res.seat || journey.berth || '36',
           statusText: res.pnr_status || 'CONFIRMED BERTH',
+          arrivalTime: res.arrival_time || journey.arrivalTime || '16:30',
         });
       }
       setIsChangingPnr(false);

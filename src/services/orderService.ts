@@ -58,14 +58,25 @@ class OrderService {
         ? 'PHONEPE'
         : 'UPI_RAZORPAY';
 
+    const cleanPnr = journey.pnr ? journey.pnr.replace(/[^0-9]/g, '') : '2458910236';
+    const trainName = journey.trainName || 'Dibrugarh Rajdhani Express';
+    const arrivalTime = journey.arrivalTime || '16:30';
+
     const fastApiPayload = {
+      pnr: cleanPnr,
+      trainNumber: trainNo,
       train_no: trainNo,
-      station_code: deliveryStation,
+      trainName: trainName,
+      train_name: trainName,
       coach: coach.toUpperCase(),
+      seat: seatNo,
       seat_no: seatNo,
+      station: deliveryStation,
+      station_code: deliveryStation,
+      arrivalTime: arrivalTime,
+      arrival_time: arrivalTime,
       passenger_name: passengerName,
       passenger_phone: passengerPhone,
-      pnr: journey.pnr ? journey.pnr.replace(/-/g, '') : '2458910236',
       payment_method: paymentMethod,
       items: cartItems.map((item) => ({
         product_id: toUuid(item.id),
@@ -75,8 +86,11 @@ class OrderService {
 
     let backendResponse: any = null;
     const apiEndpoints = [
+      `${API_BASE_URL.replace(/\/$/, '')}/api/v1/orders`,
       `${API_BASE_URL.replace(/\/$/, '')}/api/v1/orders/create`,
+      'https://railquick-backend.onrender.com/api/v1/orders',
       'https://railquick-backend.onrender.com/api/v1/orders/create',
+      '/api/v1/orders',
       '/api/v1/orders/create',
     ].filter(Boolean) as string[];
 

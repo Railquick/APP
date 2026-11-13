@@ -20,6 +20,7 @@ export const JOURNEY_DETAILS: JourneyDetails = {
   scheduledArrivalMins: 10,
   haltDurationMins: 5,
   statusText: 'CONFIRMED BERTH',
+  arrivalTime: '16:30',
 };
 
 export const SEARCH_TERMS = [

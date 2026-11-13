@@ -6,10 +6,17 @@ from supabase import create_client, Client
 load_dotenv()
 
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://luyaddknzpiyrhztlage.supabase.co")
-SUPABASE_SERVICE_ROLE_KEY = os.getenv(
-    "SUPABASE_SERVICE_ROLE_KEY",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1eWFkZGtuenBpeXJoenRsYWdlIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDc4MTc0MywiZXhwIjoyMTA2MzU3NzQzfQ.WNB9rsqlberSojtox8d9SGNkeZMMHVlkplLAjXA61EE",
-)
+_env_key = os.getenv("SUPABASE_KEY", "").strip()
+_env_role = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "").strip()
+
+if _env_key.startswith("sb_secret_"):
+    SUPABASE_SERVICE_ROLE_KEY = _env_key
+elif _env_role.startswith("sb_secret_"):
+    SUPABASE_SERVICE_ROLE_KEY = _env_role
+elif _env_key:
+    SUPABASE_SERVICE_ROLE_KEY = _env_key
+else:
+    SUPABASE_SERVICE_ROLE_KEY = _env_role or "" 
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
