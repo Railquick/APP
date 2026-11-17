@@ -206,6 +206,25 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
   const showAll = selectedCategory === 'all';
 
+  const renderProductSlider = (items: ProductItem[]) => (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.slidableProductsContent}
+    >
+      {items.map((prod) => (
+        <View key={prod.id} style={styles.slidableCardWrapper}>
+          <MarketplaceProductCard
+            product={prod}
+            variant="grid-2"
+            style={styles.uniformBoxCard}
+            onPress={handleOpenProduct}
+          />
+        </View>
+      ))}
+    </ScrollView>
+  );
+
   return (
     <View style={styles.container}>
       <StatusBar style="dark" />
@@ -283,39 +302,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               </TouchableOpacity>
             </View>
 
-            <View style={styles.grid2Container}>
-              <View style={styles.grid2Row}>
-                {(filteredCategoryProducts.length > 0
-                  ? filteredCategoryProducts.slice(0, 2)
-                  : PRODUCTS.slice(0, 2)
-                ).map((prod) => (
-                  <MarketplaceProductCard
-                    key={prod.id}
-                    product={prod}
-                    variant="grid-2"
-                    onPress={handleOpenProduct}
-                  />
-                ))}
-              </View>
-              {(filteredCategoryProducts.length > 2
-                ? filteredCategoryProducts.slice(2, 4)
-                : PRODUCTS.slice(2, 4)
-              ).length > 0 && (
-                <View style={styles.grid2Row}>
-                  {(filteredCategoryProducts.length > 2
-                    ? filteredCategoryProducts.slice(2, 4)
-                    : PRODUCTS.slice(2, 4)
-                  ).map((prod) => (
-                    <MarketplaceProductCard
-                      key={prod.id}
-                      product={prod}
-                      variant="grid-2"
-                      onPress={handleOpenProduct}
-                    />
-                  ))}
-                </View>
-              )}
-            </View>
+            {renderProductSlider(
+              filteredCategoryProducts.length > 0
+                ? filteredCategoryProducts
+                : PRODUCTS.slice(0, 6)
+            )}
           </View>
         )}
 
@@ -335,28 +326,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               <Text style={styles.sectionItemCount}>{mobileProducts.length} Items</Text>
             </View>
 
-            <View style={styles.grid2Container}>
-              <View style={styles.grid2Row}>
-                {mobileProducts.slice(0, 2).map((prod) => (
-                  <MarketplaceProductCard
-                    key={prod.id}
-                    product={prod}
-                    variant="grid-2"
-                    onPress={handleOpenProduct}
-                  />
-                ))}
-              </View>
-              <View style={styles.grid2Row}>
-                {mobileProducts.slice(2, 4).map((prod) => (
-                  <MarketplaceProductCard
-                    key={prod.id}
-                    product={prod}
-                    variant="grid-2"
-                    onPress={handleOpenProduct}
-                  />
-                ))}
-              </View>
-            </View>
+            {renderProductSlider(mobileProducts)}
           </View>
         )}
 
@@ -379,30 +349,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               <Text style={styles.sectionItemCount}>{snacksProducts.length} Items</Text>
             </View>
 
-            <View style={styles.grid2Container}>
-              <View style={styles.grid2Row}>
-                {snacksProducts.slice(0, 2).map((prod) => (
-                  <MarketplaceProductCard
-                    key={prod.id}
-                    product={prod}
-                    variant="grid-2"
-                    onPress={handleOpenProduct}
-                  />
-                ))}
-              </View>
-              {snacksProducts.length > 2 && (
-                <View style={styles.grid2Row}>
-                  {snacksProducts.slice(2, 4).map((prod) => (
-                    <MarketplaceProductCard
-                      key={prod.id}
-                      product={prod}
-                      variant="grid-2"
-                      onPress={handleOpenProduct}
-                    />
-                  ))}
-                </View>
-              )}
-            </View>
+            {renderProductSlider(snacksProducts)}
           </View>
         )}
 
@@ -424,14 +371,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               </View>
             </View>
 
-            {womenHygieneProducts.map((prod) => (
-              <MarketplaceProductCard
-                key={prod.id}
-                product={prod}
-                variant="horizontal"
-                onPress={handleOpenProduct}
-              />
-            ))}
+            {renderProductSlider(womenHygieneProducts)}
           </View>
         )}
 
@@ -451,16 +391,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               <Text style={styles.sectionItemCount}>{personalHygieneProducts.length} Items</Text>
             </View>
 
-            <View style={styles.grid3Row}>
-              {personalHygieneProducts.map((prod) => (
-                <MarketplaceProductCard
-                  key={prod.id}
-                  product={prod}
-                  variant="grid-3"
-                  onPress={handleOpenProduct}
-                />
-              ))}
-            </View>
+            {renderProductSlider(personalHygieneProducts)}
           </View>
         )}
 
@@ -480,16 +411,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               <Text style={styles.sectionItemCount}>{babyProducts.length} Items</Text>
             </View>
 
-            <View style={styles.grid2Row}>
-              {babyProducts.map((prod) => (
-                <MarketplaceProductCard
-                  key={prod.id}
-                  product={prod}
-                  variant="grid-2"
-                  onPress={handleOpenProduct}
-                />
-              ))}
-            </View>
+            {renderProductSlider(babyProducts)}
           </View>
         )}
 
@@ -509,16 +431,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               <Text style={styles.sectionItemCount}>{sleepProducts.length} Items</Text>
             </View>
 
-            <View style={styles.grid2Row}>
-              {sleepProducts.map((prod) => (
-                <MarketplaceProductCard
-                  key={prod.id}
-                  product={prod}
-                  variant="grid-2"
-                  onPress={handleOpenProduct}
-                />
-              ))}
-            </View>
+            {renderProductSlider(sleepProducts)}
           </View>
         )}
 
@@ -528,35 +441,26 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           selectedCategory === 'first-aid' ||
           selectedCategory === 'travel-accessories') && (
           <View style={styles.sectionContainer}>
-            {(showAll || selectedCategory === 'travel-essentials') &&
-              travelEssentialsProducts.map((prod) => (
-                <MarketplaceProductCard
-                  key={prod.id}
-                  product={prod}
-                  variant="horizontal"
-                  onPress={handleOpenProduct}
-                />
-              ))}
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionHeaderLeft}>
+                <View style={[styles.sectionIconBox, { backgroundColor: '#F0FDF4' }]}>
+                  <Luggage size={17} color="#159447" />
+                </View>
+                <View>
+                  <Text style={styles.sectionTitle}>Travel Essentials & Medical</Text>
+                  <Text style={styles.sectionSubtitle}>Locks, ORS, emergency tablets & accessories</Text>
+                </View>
+              </View>
+              <Text style={styles.sectionItemCount}>
+                {[...travelEssentialsProducts, ...firstAidProducts, ...travelAccessoriesProducts].length} Items
+              </Text>
+            </View>
 
-            {(showAll || selectedCategory === 'first-aid') &&
-              firstAidProducts.map((prod) => (
-                <MarketplaceProductCard
-                  key={prod.id}
-                  product={prod}
-                  variant="horizontal"
-                  onPress={handleOpenProduct}
-                />
-              ))}
-
-            {(showAll || selectedCategory === 'travel-accessories') &&
-              travelAccessoriesProducts.map((prod) => (
-                <MarketplaceProductCard
-                  key={prod.id}
-                  product={prod}
-                  variant="horizontal"
-                  onPress={handleOpenProduct}
-                />
-              ))}
+            {renderProductSlider([
+              ...travelEssentialsProducts,
+              ...firstAidProducts,
+              ...travelAccessoriesProducts,
+            ])}
           </View>
         )}
 
@@ -611,12 +515,12 @@ const styles = StyleSheet.create({
   },
   sectionContainer: {
     marginTop: 18,
-    paddingHorizontal: 14,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: 14,
     marginBottom: 10,
   },
   sectionHeaderLeft: {
@@ -673,6 +577,18 @@ const styles = StyleSheet.create({
     fontSize: 10.5,
     fontWeight: '800',
     color: '#08763A',
+  },
+  slidableProductsContent: {
+    paddingHorizontal: 14,
+    gap: 12,
+    paddingVertical: 4,
+  },
+  slidableCardWrapper: {
+    width: 168,
+  },
+  uniformBoxCard: {
+    width: 168,
+    minHeight: 285,
   },
   grid2Container: {
     gap: 10,

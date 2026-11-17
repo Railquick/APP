@@ -315,6 +315,7 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
                         }}
                       />
                     ))}
+                    {rowItems.length === 1 && <View style={styles.emptyGridPlaceholder} />}
                   </View>
                 );
               })}
@@ -662,6 +663,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 10,
     marginBottom: 10,
+  },
+  emptyGridPlaceholder: {
+    flex: 1,
   },
 
   // Initial State

@@ -15,12 +15,14 @@ interface MarketplaceProductCardProps {
   product: ProductItem;
   variant?: 'grid-2' | 'grid-3' | 'horizontal';
   onPress: (product: ProductItem) => void;
+  style?: any;
 }
 
 export const MarketplaceProductCard: React.FC<MarketplaceProductCardProps> = ({
   product,
   variant = 'grid-2',
   onPress,
+  style,
 }) => {
   const { getItemQuantity, addToCart, removeFromCart } = useCart();
   const quantity = getItemQuantity(product.id);
@@ -126,7 +128,7 @@ export const MarketplaceProductCard: React.FC<MarketplaceProductCardProps> = ({
           </View>
         </View>
 
-        {/* Right Action: Square Green-bordered Add Button / Stepper */}
+        {/* Right Action: Square Light Green Add Button / Stepper */}
         <View style={styles.horizontalActionBox}>
           {quantity === 0 ? (
             <TouchableOpacity
@@ -134,7 +136,7 @@ export const MarketplaceProductCard: React.FC<MarketplaceProductCardProps> = ({
               onPress={handleAddPress}
               style={styles.squareAddButton}
             >
-              <Plus size={20} color="#FFFFFF" strokeWidth={3} />
+              <Plus size={20} color="#0F6C38" strokeWidth={3} />
             </TouchableOpacity>
           ) : (
             <View style={styles.squareStepperContainer}>
@@ -143,7 +145,7 @@ export const MarketplaceProductCard: React.FC<MarketplaceProductCardProps> = ({
                 style={styles.stepperActionBtn}
                 hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
               >
-                <Minus size={13} color="#FFFFFF" strokeWidth={3} />
+                <Minus size={13} color="#0F6C38" strokeWidth={3} />
               </TouchableOpacity>
               <Text style={styles.stepperValueText}>{quantity}</Text>
               <TouchableOpacity
@@ -151,7 +153,7 @@ export const MarketplaceProductCard: React.FC<MarketplaceProductCardProps> = ({
                 style={styles.stepperActionBtn}
                 hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
               >
-                <Plus size={13} color="#FFFFFF" strokeWidth={3} />
+                <Plus size={13} color="#0F6C38" strokeWidth={3} />
               </TouchableOpacity>
             </View>
           )}
@@ -246,7 +248,7 @@ export const MarketplaceProductCard: React.FC<MarketplaceProductCardProps> = ({
     <TouchableOpacity
       activeOpacity={0.92}
       onPress={() => onPress(product)}
-      style={styles.cardContainer}
+      style={[styles.cardContainer, style]}
     >
       {/* 1. TOP IMAGE BOX */}
       <View style={styles.imageBox}>
@@ -275,14 +277,14 @@ export const MarketplaceProductCard: React.FC<MarketplaceProductCardProps> = ({
             </Text>
           </View>
 
-          {/* Square Add Button with Green Border (matches reference) */}
+          {/* Square Light Green Add Button / Stepper */}
           {quantity === 0 ? (
             <TouchableOpacity
               activeOpacity={0.85}
               onPress={handleAddPress}
               style={styles.squareAddButton}
             >
-              <Plus size={20} color="#FFFFFF" strokeWidth={3} />
+              <Plus size={20} color="#0F6C38" strokeWidth={3} />
             </TouchableOpacity>
           ) : (
             <View style={styles.squareStepperContainer}>
@@ -291,7 +293,7 @@ export const MarketplaceProductCard: React.FC<MarketplaceProductCardProps> = ({
                 style={styles.stepperActionBtn}
                 hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
               >
-                <Minus size={13} color="#FFFFFF" strokeWidth={3} />
+                <Minus size={13} color="#0F6C38" strokeWidth={3} />
               </TouchableOpacity>
               <Text style={styles.stepperValueText}>{quantity}</Text>
               <TouchableOpacity
@@ -299,7 +301,7 @@ export const MarketplaceProductCard: React.FC<MarketplaceProductCardProps> = ({
                 style={styles.stepperActionBtn}
                 hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
               >
-                <Plus size={13} color="#FFFFFF" strokeWidth={3} />
+                <Plus size={13} color="#0F6C38" strokeWidth={3} />
               </TouchableOpacity>
             </View>
           )}
@@ -351,15 +353,15 @@ const styles = StyleSheet.create({
   // ================= GRID-2 MAIN CARD STYLES =================
   cardContainer: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FFF7F1', // Soft warm cream-peach, matches UI theme instead of stark white
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#E8ECE9',
+    borderColor: '#F1D6C5', // Soft warm peach border
     padding: 10,
     justifyContent: 'space-between',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowColor: '#8C3D1E',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 2,
     minHeight: 285,
@@ -367,13 +369,13 @@ const styles = StyleSheet.create({
   imageBox: {
     width: '100%',
     aspectRatio: 1.05,
-    backgroundColor: '#F3F6F4',
+    backgroundColor: '#FFEDE2', // Soft warm peach product background
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
     borderWidth: 1,
-    borderColor: '#E7EBE8',
+    borderColor: '#F2D7C7',
   },
   heartButton: {
     position: 'absolute',
@@ -382,7 +384,9 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.75)',
+    backgroundColor: 'rgba(255, 255, 255, 0.88)',
+    borderWidth: 1,
+    borderColor: '#F2D7C7',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 5,
@@ -398,7 +402,7 @@ const styles = StyleSheet.create({
     zIndex: 4,
   },
   weightPill: {
-    backgroundColor: '#0b6a31ff',
+    backgroundColor: '#342D29', // Dark charcoal/brown matching theme primary text
     borderRadius: 7,
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -414,36 +418,41 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 11,
-    backgroundColor: '#32911aff',
-    borderWidth: 2,
-    borderColor: '#44432fff',
+    backgroundColor: '#DCFCE7', // Fresh light green suited for the UI
+    borderWidth: 1.5,
+    borderColor: '#4ADE80', // Crisp light green border
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#159447',
+    shadowColor: '#16A34A',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.15,
     shadowRadius: 4,
     elevation: 2,
   },
   squareStepperContainer: {
     height: 38,
     borderRadius: 11,
-    backgroundColor: '#16201A',
-    borderWidth: 2,
-    borderColor: '#159447',
+    backgroundColor: '#DCFCE7', // Fresh light green
+    borderWidth: 1.5,
+    borderColor: '#4ADE80',
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 4,
     gap: 4,
+    shadowColor: '#16A34A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
   },
   stepperActionBtn: {
     paddingHorizontal: 4,
     paddingVertical: 4,
   },
   stepperValueText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '800',
+    color: '#0F6C38', // Deep forest green for high contrast on light green
+    fontSize: 13,
+    fontWeight: '900',
     minWidth: 14,
     textAlign: 'center',
   },
@@ -476,7 +485,7 @@ const styles = StyleSheet.create({
   mrpText: {
     fontSize: 11.5,
     fontWeight: '500',
-    color: '#94A3B8',
+    color: '#8A7A70', // Muted warm brown
     textDecorationLine: 'line-through',
   },
   savingsText: {
@@ -488,7 +497,7 @@ const styles = StyleSheet.create({
   productTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#17231B',
+    color: '#342D29', // Dark charcoal/brown
     lineHeight: 17,
     marginTop: 4,
   },
@@ -525,16 +534,16 @@ const styles = StyleSheet.create({
 
   // ================= HORIZONTAL CARD STYLES =================
   horizontalCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FFF7F1',
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#E8ECE9',
+    borderColor: '#F1D6C5',
     padding: 10,
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#000000ff',
+    shadowColor: '#8C3D1E',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
+    shadowOpacity: 0.06,
     shadowRadius: 6,
     elevation: 2,
     marginBottom: 10,
@@ -543,9 +552,9 @@ const styles = StyleSheet.create({
     width: 82,
     height: 82,
     borderRadius: 14,
-    backgroundColor: '#F3F6F4',
+    backgroundColor: '#FFEDE2',
     borderWidth: 1,
-    borderColor: '#E7EBE8',
+    borderColor: '#F2D7C7',
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',

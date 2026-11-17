@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Alert } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Alert, Linking } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -28,20 +28,28 @@ export const TermsFooter: React.FC<TermsFooterProps> = ({ delay = 1450 }) => {
     };
   });
 
-  const handleTermsPress = () => {
-    Alert.alert(
-      'Terms of Service',
-      'RailQuick Terms of Service:\n\n1. Real-time seat delivery is coordinated via train PNR and station schedules.\n2. Items are verified by IRCTC Station Express partners.\n3. Safe contactless delivery at your designated coach and berth.',
-      [{ text: 'Close' }]
-    );
+  const handleTermsPress = async () => {
+    try {
+      await Linking.openURL('https://www.railquick.in/terms');
+    } catch {
+      Alert.alert(
+        'Terms of Service',
+        'RailQuick Terms of Service:\n\n1. Real-time seat delivery is coordinated via train PNR and station schedules.\n2. Items are verified by IRCTC Station Express partners.\n3. Safe contactless delivery at your designated coach and berth.',
+        [{ text: 'Close' }]
+      );
+    }
   };
 
-  const handlePrivacyPress = () => {
-    Alert.alert(
-      'Privacy Policy',
-      'RailQuick Privacy Commitment:\n\nWe prioritize passenger privacy and never sell or share your journey itinerary or personal contact details with third-party advertisers.',
-      [{ text: 'Close' }]
-    );
+  const handlePrivacyPress = async () => {
+    try {
+      await Linking.openURL('https://www.railquick.in/privacy');
+    } catch {
+      Alert.alert(
+        'Privacy Policy',
+        'RailQuick Privacy Commitment:\n\nWe prioritize passenger privacy and never sell or share your journey itinerary or personal contact details with third-party advertisers.',
+        [{ text: 'Close' }]
+      );
+    }
   };
 
   return (

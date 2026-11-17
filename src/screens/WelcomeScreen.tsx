@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -142,11 +143,12 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onSignInSuccess })
     }
   };
 
-  const handlePolicyPress = (type: string) => {
-    Alert.alert(
-      type,
-      `RailQuick ${type} ensures your train berth orders, passenger privacy, and data security are 100% protected.`
-    );
+  const handleOpenLink = async (url: string) => {
+    try {
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert('Unable to Open Link', `Could not navigate to: ${url}`);
+    }
   };
 
   // Helper to render duplicated list for infinite seamless marquee
@@ -248,14 +250,23 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onSignInSuccess })
         <View style={styles.footerSection}>
           <Text style={styles.termsBaseText}>By continuing, you agree to our</Text>
           <View style={styles.termsLinksRow}>
-            <TouchableOpacity onPress={() => handlePolicyPress('Terms of Service')}>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => handleOpenLink('https://www.railquick.in/terms')}
+            >
               <Text style={styles.termsLinkText}>Terms of Service</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => handlePolicyPress('Privacy Policy')}>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => handleOpenLink('https://www.railquick.in/privacy')}
+            >
               <Text style={styles.termsLinkText}>Privacy Policy</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => handlePolicyPress('Content Policy')}>
-              <Text style={styles.termsLinkText}>Content Policy</Text>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => handleOpenLink('https://www.railquick.in/security')}
+            >
+              <Text style={styles.termsLinkText}>Security Policy</Text>
             </TouchableOpacity>
           </View>
         </View>
